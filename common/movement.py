@@ -69,12 +69,15 @@ class Move:
         return message
 
 def main():
-    w_deg_s = float(input("Velocidad angular (deg/s): "))
+    theta_deg = float(input("Angulo theta (deg): "))
     radius_dm = float(input("Radio (dm): "))
+    time_s = float(input("Tiempo (s): "))
 
-    w_rad_s = math.radians(w_deg_s)
-    v_dm_s = w_rad_s * radius_dm
+    theta_rad = math.radians(theta_deg)
+    arc_dm = theta_rad * radius_dm
+    v_dm_s = arc_dm / time_s
 
+    print(f"Arco calculado: {arc_dm} dm")
     print(f"Velocidad lineal calculada: {v_dm_s} dm/s")
 
     Move().s_movement("create")
