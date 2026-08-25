@@ -28,12 +28,18 @@ class Move:
             "duration_s": duration
         }
 
-    def s_movement(self, action_type: str) -> dict:
+    def s_movement(self, action_type: str, theta_deg: float, radius_dm: float, duration_s: float) -> dict:
         """
         Build the sequence of states for an "S" movement: arm down, S-move, arm up.
 
+        The S-move's velocity is derived from the arc it travels
+        (arc = theta_rad * radius) divided by the given duration.
+
         Args:
             action_type (str): the action label to attach to the message.
+            theta_deg (float): angle turned during the S-move, in degrees.
+            radius_dm (float): turning radius, in dm.
+            duration_s (float): time the S-move lasts, in seconds.
 
         Returns:
             dict: the message with the generated states.
@@ -47,11 +53,12 @@ class Move:
         print(states_list[-1])
 
         # S-move
-        time: float = random.uniform(0.0, 5.0)
-        vel: float = random.uniform(0.0, 5.0)
-        states_list.append(self.create_state(vel, 0, 0, 180, time))
+        theta_rad = math.radians(theta_deg)
+        arc_dm = theta_rad * radius_dm
+        vel = arc_dm / duration_s
+        states_list.append(self.create_state(vel, 0, 0, theta_deg, duration_s))
         print(states_list[-1])
-        states_list.append(self.create_state(vel, 0, 0, -180, time))
+        states_list.append(self.create_state(vel, 0, 0, -theta_deg, duration_s))
         print(states_list[-1])
 
         # Arm up
@@ -73,15 +80,7 @@ def main():
     radius_dm = float(input("Radio (dm): "))
     time_s = float(input("Tiempo (s): "))
 
-    theta_rad = math.radians(theta_deg)
-    arc_dm = theta_rad * radius_dm
-    v_dm_s = arc_dm / time_s
-
-    print(f"Arco calculado: {arc_dm} dm")
-    print(f"Velocidad lineal calculada: {v_dm_s} dm/s")
-
-    state = Move().create_state(v_dm_s, 0, 0, theta_deg, time_s)
-    print(state)
+    Move().s_movement("create", theta_deg, radius_dm, time_s)
 
 
 if __name__ == "__main__":

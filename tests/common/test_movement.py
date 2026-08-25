@@ -23,7 +23,7 @@ def test_create_state_zero_duration_does_not_raise():
 
 def test_s_movement_structure():
     move = Move()
-    msg = move.s_movement("move")
+    msg = move.s_movement("move", 90.0, 2.0, 4.0)
 
     assert len(msg) == 3
     assert msg["action"] == "move"
@@ -34,7 +34,7 @@ def test_s_movement_structure():
 
 def test_s_movement_states_have_expected_shape():
     move = Move()
-    msg = move.s_movement("move")
+    msg = move.s_movement("move", 90.0, 2.0, 4.0)
 
     for state in msg["states"]:
         assert set(state.keys()) == {
