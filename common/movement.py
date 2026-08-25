@@ -80,7 +80,8 @@ def main():
     print(f"Arco calculado: {arc_dm} dm")
     print(f"Velocidad lineal calculada: {v_dm_s} dm/s")
 
-    Move().s_movement("create")
+    state = Move().create_state(v_dm_s, 0, 0, theta_deg, time_s)
+    print(state)
 
 
 if __name__ == "__main__":
