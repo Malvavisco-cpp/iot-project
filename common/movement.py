@@ -1,3 +1,4 @@
+import math
 import random
 
 class Move:
@@ -67,3 +68,17 @@ class Move:
 
         return message
 
+def main():
+    w_deg_s = float(input("Velocidad angular (deg/s): "))
+    radius_dm = float(input("Radio (dm): "))
+
+    w_rad_s = math.radians(w_deg_s)
+    v_dm_s = w_rad_s * radius_dm
+
+    print(f"Velocidad lineal calculada: {v_dm_s} dm/s")
+
+    Move().s_movement("create")
+
+
+if __name__ == "__main__":
+    main()
