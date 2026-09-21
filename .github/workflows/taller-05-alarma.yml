@@ -1,0 +1,33 @@
+name: Pruebas taller 05 - alarma
+
+on:
+  push:
+    paths:
+      - "taller_05_alarma/**"
+      - ".github/workflows/taller-05-alarma.yml"
+  pull_request:
+    paths:
+      - "taller_05_alarma/**"
+      - ".github/workflows/taller-05-alarma.yml"
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: taller_05_alarma
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: taller_05_alarma/requirements.txt
+
+      - name: Instalar dependencias
+        run: python -m pip install -r requirements.txt
+
+      # No usa el broker real: la prueba con red solo corre con RUN_MQTT_TESTS=1.
+      - name: Ejecutar pruebas
+        run: python -m pytest -q

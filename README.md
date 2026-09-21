@@ -42,3 +42,9 @@ Exponer el robot a una muestra de desecho de papelería que debe transportar a u
 ## Estado
 
 En estado de planeación.
+
+## Talleres
+
+| Taller | Carpeta | Descripción |
+|---|---|---|
+| 05 — GPIO, IR y Flet | [taller_05_alarma/](taller_05_alarma/README.md) | Sistema de control de acceso y alarma con Raspberry Pi Pico 2 W, control remoto IR y monitor en Flet |
