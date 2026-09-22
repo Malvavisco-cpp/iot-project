@@ -1,5 +1,13 @@
-"""Cliente MQTT de la interfaz (paho-mqtt 2.x). Solo escucha: Flet no publica nada."""
+"""Cliente MQTT de la interfaz (paho-mqtt 2.x).
 
+Escucha los tópicos de la alarma y, además, publica el único comando que la UI
+envía: el botón "simular puerta" (`common.messages.TOPIC_DOOR_SIM`), que solo
+escucha el Pico virtual (`tools/pico_simulator.py`). El resto sigue siendo de
+solo lectura: la Pico real no se suscribe a nada, así que no puede armar ni
+desarmar la alarma por MQTT.
+"""
+
+import json
 import uuid
 from typing import Callable
 
@@ -44,6 +52,9 @@ class MqttClient:
     def stop(self) -> None:
         self._client.loop_stop()
         self._client.disconnect()
+
+    def publish(self, topic: str, payload: dict, retain: bool = False) -> None:
+        self._client.publish(topic, json.dumps(payload), retain=retain)
 
     def _on_connect(self, client, userdata, flags, reason_code, properties) -> None:
         if reason_code.is_failure:

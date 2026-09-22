@@ -86,3 +86,23 @@ def test_state_and_online_are_retained_but_events_are_not():
     assert messages.TOPIC_STATE in messages.RETAINED_TOPICS
     assert messages.TOPIC_ONLINE in messages.RETAINED_TOPICS
     assert messages.TOPIC_EVENT not in messages.RETAINED_TOPICS
+
+
+def test_door_sim_topic_is_not_retained():
+    assert messages.TOPIC_DOOR_SIM not in messages.RETAINED_TOPICS
+
+
+def test_build_door_set():
+    assert messages.build_door_set(True) == {"door_open": True}
+    assert messages.build_door_set(False) == {"door_open": False}
+
+
+def test_valid_door_set_passes_validation():
+    messages.validate_door_set(messages.build_door_set(True))
+    messages.validate_door_set(messages.build_door_set(False))
+
+
+@pytest.mark.parametrize("payload", [None, [], "true", 1, {}, {"door_open": 1}, {"door_open": "yes"}])
+def test_invalid_door_set_is_rejected(payload):
+    with pytest.raises(ValueError):
+        messages.validate_door_set(payload)

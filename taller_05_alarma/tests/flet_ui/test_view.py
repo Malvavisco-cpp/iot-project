@@ -172,3 +172,21 @@ def test_garbage_messages_do_not_break_the_screen(parts):
     view.on_message(PREFIX + "alarm/event", b"\xff")
 
     assert view.status_headline.value == "SIN DATOS"
+
+
+def test_door_buttons_call_simulate_door_when_clicked():
+    calls = []
+    page = FakePage()
+    monitor = AlarmMonitor(PREFIX)
+    view = AlarmView(page, monitor, simulate_door=calls.append)
+
+    view.door_sim_open_btn.on_click(None)
+    view.door_sim_close_btn.on_click(None)
+
+    assert calls == [True, False]
+
+
+def test_door_buttons_do_nothing_without_a_simulator_wired_up(parts):
+    _, _, view = parts
+
+    view.door_sim_open_btn.on_click(None)  # no debe lanzar excepción

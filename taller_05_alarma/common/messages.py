@@ -8,8 +8,15 @@ Los tópicos van SIN prefijo; el transporte MQTT antepone `config.PREFIX`.
       node/online     (retenido)  {"online": bool}; el broker publica false si el Pico cae
       watchdog/stats              telemetría de PicoROS (memoria, RSSI, tiempos)
 
-Flet no envía nada: la clave solo se digita en el control IR, así que la
-interfaz no puede armar ni desarmar la alarma.
+    Flet -> Pico virtual
+      sim/door_set                {"door_open": bool}; botón "simular puerta" de la UI.
+                                   Solo lo escucha tools/pico_simulator.py: la Pico real
+                                   no se suscribe a ningún tópico de la alarma, así que
+                                   este comando no tiene efecto contra el hardware real
+                                   (ahí la puerta es el sensor físico, no un botón).
+
+Fuera de ese comando de simulación, Flet no envía nada: la clave solo se digita
+en el control IR, así que la interfaz no puede armar ni desarmar la alarma.
 """
 
 from common.alarm import STATE_ARMED, STATE_DISARMED, STATE_TRIGGERED
@@ -18,6 +25,7 @@ TOPIC_STATE = "alarm/state"
 TOPIC_EVENT = "alarm/event"
 TOPIC_ONLINE = "node/online"
 TOPIC_WATCHDOG = "watchdog/stats"
+TOPIC_DOOR_SIM = "sim/door_set"
 
 # Estos se retienen en el broker: quien se conecte tarde recibe el último valor.
 RETAINED_TOPICS = (TOPIC_STATE, TOPIC_ONLINE)
@@ -57,6 +65,10 @@ def build_online(online: bool, node: str) -> dict:
     return {"online": online, "node": node}
 
 
+def build_door_set(door_open: bool) -> dict:
+    return {"door_open": door_open}
+
+
 def _is_int(value) -> bool:
     # bool es subclase de int en Python; aquí no cuenta como número.
     return isinstance(value, int) and not isinstance(value, bool)
@@ -76,6 +88,14 @@ def validate_state(msg) -> None:
             raise ValueError("%s debe ser un entero >= 0" % key)
     if msg.get("reason") is not None and not isinstance(msg["reason"], str):
         raise ValueError("reason debe ser texto o null")
+
+
+def validate_door_set(msg) -> None:
+    """Lanza ValueError si `msg` no es un sim/door_set válido."""
+    if not isinstance(msg, dict):
+        raise ValueError("sim/door_set debe ser un objeto JSON")
+    if not isinstance(msg.get("door_open"), bool):
+        raise ValueError("door_open debe ser booleano")
 
 
 def validate_event(msg) -> None:

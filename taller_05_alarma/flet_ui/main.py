@@ -2,17 +2,21 @@
 
 Ejecutar desde la carpeta del taller:   python -m flet_ui.main
 
-Solo muestra: no envía nada. La clave se digita únicamente en el control IR, así
-que esta ventana no puede armar ni desarmar la alarma, y si se cierra (o el PC se
-apaga) la alarma sigue funcionando en el Pico.
+Mayormente solo muestra: la clave se digita únicamente en el control IR, así que
+esta ventana no puede armar ni desarmar la alarma, y si se cierra (o el PC se
+apaga) la alarma sigue funcionando en el Pico. La única acción que sí envía es
+el botón "simular puerta", pensado para el Pico virtual (`tools/pico_simulator.py`):
+contra el hardware real no tiene efecto, porque ahí la puerta es un sensor físico
+y la Pico real no escucha comandos por MQTT.
 """
 
 import threading
 import time
+from typing import Callable
 
 import flet as ft
 
-from common import config
+from common import config, messages
 from common.alarm import STATE_ARMED, STATE_DISARMED, STATE_TRIGGERED
 from flet_ui.monitor import (
     LEVEL_DANGER,
@@ -88,9 +92,15 @@ def _info_card(icon: str, title: str) -> tuple[ft.Container, ft.Icon, ft.Text]:
 class AlarmView:
     """Construye la pantalla y la redibuja a partir de un AlarmMonitor."""
 
-    def __init__(self, page: ft.Page, monitor: AlarmMonitor):
+    def __init__(
+        self,
+        page: ft.Page,
+        monitor: AlarmMonitor,
+        simulate_door: Callable[[bool], None] | None = None,
+    ):
         self.page = page
         self.monitor = monitor
+        self._simulate_door = simulate_door
         self._lock = threading.RLock()
         self._blink = False
         self._running = True
@@ -147,6 +157,20 @@ class AlarmView:
         )
 
         door_card, self.door_icon, self.door_value = _info_card(ft.Icons.DOOR_FRONT_DOOR, "PUERTA 1")
+        self.door_sim_open_btn = ft.ElevatedButton(
+            "Abrir", icon=ft.Icons.LOCK_OPEN, on_click=lambda e: self._on_simulate_door(True)
+        )
+        self.door_sim_close_btn = ft.ElevatedButton(
+            "Cerrar", icon=ft.Icons.LOCK, on_click=lambda e: self._on_simulate_door(False)
+        )
+        door_column = ft.Column(
+            [
+                door_card,
+                ft.Text("Simular puerta (solo Pico virtual):", size=11, color=ft.Colors.BLUE_GREY_300),
+                ft.Row([self.door_sim_open_btn, self.door_sim_close_btn], spacing=8),
+            ],
+            spacing=6,
+        )
         attempts_card, self.attempts_icon, self.attempts_value = _info_card(
             ft.Icons.PASSWORD, "CLAVES INCORRECTAS"
         )
@@ -176,7 +200,7 @@ class AlarmView:
             ),
             self.banner,
             self.status_card,
-            ft.Row([door_card, attempts_card, system_card], wrap=True, spacing=12, run_spacing=12),
+            ft.Row([door_column, attempts_card, system_card], wrap=True, spacing=12, run_spacing=12),
             log_card,
         )
 
@@ -269,6 +293,12 @@ class AlarmView:
             self._broker_detail = detail or "desconectado"
         self.render()
 
+    # -------------------------------------------------------- salida (botón)
+
+    def _on_simulate_door(self, is_open: bool) -> None:
+        if self._simulate_door is not None:
+            self._simulate_door(is_open)
+
     # -------------------------------------------------------------- animación
 
     def run_ticker(self) -> None:
@@ -293,7 +323,11 @@ def main(page: ft.Page) -> None:
     page.scroll = ft.ScrollMode.AUTO
 
     monitor = AlarmMonitor(config.PREFIX)
-    view = AlarmView(page, monitor)
+
+    def simulate_door(is_open: bool) -> None:
+        client.publish(config.PREFIX + messages.TOPIC_DOOR_SIM, messages.build_door_set(is_open))
+
+    view = AlarmView(page, monitor, simulate_door=simulate_door)
     client = MqttClient(config.BROKER, config.PORT, monitor.topics, view.on_message, view.on_link)
 
     def on_close(_) -> None:

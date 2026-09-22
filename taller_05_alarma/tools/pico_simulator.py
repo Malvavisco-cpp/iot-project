@@ -2,7 +2,12 @@
 
 Sirve para probar la interfaz Flet sin la placa (quien tiene el hardware es otro
 compañero). Usa AlarmController y AlarmRuntime tal cual los usa main.py del Pico,
-con pines falsos; los comandos del teclado reemplazan al control IR y a la puerta.
+con pines falsos; los comandos del teclado reemplazan al control IR.
+
+La puerta ya no se simula por consola: se abre/cierra con el botón "Simular
+puerta" de la interfaz Flet, que publica en `common.messages.TOPIC_DOOR_SIM` (lo
+único que este Pico virtual escucha por MQTT; la Pico real no escucha nada, ahí
+la puerta es siempre el sensor físico).
 
     python -m tools.pico_simulator                  # broker y prefijo de common/config.py
     python -m tools.pico_simulator --password 4321
@@ -10,7 +15,6 @@ con pines falsos; los comandos del teclado reemplazan al control IR y a la puert
 Comandos (escriba y Enter):
     1234     digita esas teclas, como si las presionara en el control IR
     c        tecla "borrar"
-    o / x    abre / cierra la puerta
     s        muestra el estado
     q        salir
 """
@@ -69,6 +73,7 @@ class SimulatedPico:
             retain=True,
         )
         self.client.on_connect = self._on_connect
+        self.client.on_message = self._on_command
         self.client.reconnect_delay_set(1, 30)
         self.client.connect_async(broker, port, keepalive=30)
 
@@ -89,9 +94,20 @@ class SimulatedPico:
             print("MQTT: no se pudo conectar:", reason_code)
             return
         print("MQTT conectado.")
+        client.subscribe(self.prefix + messages.TOPIC_DOOR_SIM)
         self.publish(messages.TOPIC_ONLINE, messages.build_online(True, "simulator"))
         with self.lock:
             self.runtime.mark_dirty()  # el estado retenido puede ser viejo
+
+    def _on_command(self, client, userdata, message) -> None:
+        if message.topic != self.prefix + messages.TOPIC_DOOR_SIM:
+            return
+        try:
+            data = json.loads(message.payload.decode("utf-8"))
+            messages.validate_door_set(data)
+        except (ValueError, TypeError, UnicodeDecodeError):
+            return
+        self.set_door(data["door_open"])
 
     def start(self) -> None:
         self.client.loop_start()
@@ -159,10 +175,6 @@ def main() -> None:
             line = input("> ").strip().lower()
             if line == "q":
                 break
-            elif line == "o":
-                pico.set_door(True)
-            elif line == "x":
-                pico.set_door(False)
             elif line == "s":
                 pico.show()
             elif line in ("h", "?"):

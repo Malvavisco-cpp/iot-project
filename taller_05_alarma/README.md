@@ -132,7 +132,7 @@ python -m flet_ui.main
 
 Muestra: estado de la alarma (con parpadeo rojo al dispararse), puerta abierta/cerrada, progreso de la clave (●●○○), claves incorrectas, bitácora de eventos, telemetría del Pico (RAM, WiFi, temperatura, tiempo activo) y si el Pico está en línea.
 
-Si el Pico se cae, la tarjeta se atenúa y aparece un aviso: *"la alarma sigue funcionando en el dispositivo"*. Es una ventana de **solo lectura**: no puede armar ni desarmar la alarma.
+Si el Pico se cae, la tarjeta se atenúa y aparece un aviso: *"la alarma sigue funcionando en el dispositivo"*. Es casi una ventana de **solo lectura**: no puede armar ni desarmar la alarma. La única excepción son los botones **Abrir / Cerrar** de la tarjeta "PUERTA 1", que sirven para simular la puerta al probar con `tools/pico_simulator.py` (ver §6); contra el hardware real no hacen nada, porque ahí la puerta es el sensor físico.
 
 ## 5. Grupos: cambien el `PREFIX`
 
@@ -144,17 +144,18 @@ El broker `broker.hivemq.com` es público y compartido. En [`common/config.py`](
 python -m tools.pico_simulator
 ```
 
-Levanta un Pico virtual que usa la **misma** lógica de la alarma y publica por MQTT. En otra terminal se abre `python -m flet_ui.main` y se maneja por teclado:
+Levanta un Pico virtual que usa la **misma** lógica de la alarma y publica por MQTT. En otra terminal se abre `python -m flet_ui.main`. La clave se sigue digitando por consola (reemplaza al control IR); la puerta se abre y cierra con los botones **Abrir / Cerrar** de la tarjeta "PUERTA 1" en la ventana de Flet:
 
-| Comando | Efecto |
+| Comando (consola del simulador) | Efecto |
 |---|---|
 | `1234` | digita esas teclas, como en el control IR |
-| `o` / `x` | abre / cierra la puerta |
 | `c` | tecla *borrar* |
 | `s` | muestra el estado |
 | `q` | salir |
 
-Escenario para la demo: `1234` (activa) → `o` (dispara por intrusión) → `1234` (silencia) → `9999` (dispara por clave equivocada) → `1234` (silencia).
+Los botones de la puerta publican en `sim/door_set`, un tópico que solo escucha el Pico virtual: contra el hardware real no hacen nada, porque ahí la puerta es siempre el sensor físico y la Pico real no se suscribe a ningún tópico de la alarma.
+
+Escenario para la demo: `1234` (activa) → botón **Abrir** (dispara por intrusión) → `1234` (silencia) → `9999` (dispara por clave equivocada) → `1234` (silencia).
 
 ## 7. Pruebas
 
@@ -178,7 +179,7 @@ Los tests de GitHub Actions están en `.github/workflows/taller-05-alarma.yml` (
 
 ## Contrato MQTT
 
-Los tópicos van precedidos por el `PREFIX`. El Pico no escucha ningún tópico de la alarma (solo `node/get_second_ts`, la medición de latencia que trae `Node` de PicoROS): nadie puede inyectar teclas ni cambiar el estado por MQTT.
+Los tópicos van precedidos por el `PREFIX`. El Pico **real** no escucha ningún tópico de la alarma (solo `node/get_second_ts`, la medición de latencia que trae `Node` de PicoROS): nadie puede inyectar teclas ni cambiar el estado por MQTT. El Pico **virtual** del simulador es la única excepción: escucha `sim/door_set` para que la puerta se pueda simular desde el botón de Flet.
 
 | Tópico | Retenido | Contenido |
 |---|---|---|
@@ -186,6 +187,7 @@ Los tópicos van precedidos por el `PREFIX`. El Pico no escucha ningún tópico 
 | `alarm/event` | no | `{"seq","event","detail","uptime_s"}` — bitácora (`armed`, `disarmed`, `triggered`, `wrong_password`, `door`, `keys_cleared`) |
 | `node/online` | sí | `{"online": bool}` — el broker publica `false` (Last Will) si el Pico se cae |
 | `watchdog/stats` | no | telemetría del `WatchdogTask` de PicoROS |
+| `sim/door_set` | no | `{"door_open": bool}` — Flet → Pico virtual; solo lo escucha `tools/pico_simulator.py` |
 
 `state` ∈ `disarmed` · `armed` · `triggered`. `reason` ∈ `door_open` · `wrong_password` · `null`.
 
