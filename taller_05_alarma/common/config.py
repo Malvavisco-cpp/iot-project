@@ -9,7 +9,7 @@ from common.alarm import KEY_CLEAR
 
 BROKER = "broker.hivemq.com"
 PORT = 1883
-PREFIX = "UDFJC/iot_ws/robot0/"
+PREFIX = "UDFJC/iot_ws/robot4/"
 
 # La clave del taller es de exactamente 4 dígitos.
 PASSWORD_LENGTH = 4

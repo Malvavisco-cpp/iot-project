@@ -157,11 +157,11 @@ class AlarmView:
         )
 
         door_card, self.door_icon, self.door_value = _info_card(ft.Icons.DOOR_FRONT_DOOR, "PUERTA 1")
-        self.door_sim_open_btn = ft.ElevatedButton(
-            "Abrir", icon=ft.Icons.LOCK_OPEN, on_click=lambda e: self._on_simulate_door(True)
+        self.door_sim_open_btn = ft.Button(
+            content="Abrir", icon=ft.Icons.LOCK_OPEN, on_click=lambda e: self._on_simulate_door(True)
         )
-        self.door_sim_close_btn = ft.ElevatedButton(
-            "Cerrar", icon=ft.Icons.LOCK, on_click=lambda e: self._on_simulate_door(False)
+        self.door_sim_close_btn = ft.Button(
+            content="Cerrar", icon=ft.Icons.LOCK, on_click=lambda e: self._on_simulate_door(False)
         )
         door_column = ft.Column(
             [
