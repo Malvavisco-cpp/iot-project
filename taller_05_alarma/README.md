@@ -1,14 +1,16 @@
 # Taller 05 — Control de acceso y alarma (GPIO + IR + Flet)
 
-Solución del **taller integrador** de `05_Taller_GPIO_IR`: una alarma con Raspberry Pi Pico 2 W, un botón que hace de puerta, un LED, una sirena y un receptor IR, monitoreada desde una interfaz Flet.
+Solución del **taller integrador** de `05_Taller_GPIO_IR`: una alarma con Raspberry Pi Pico 2 W, un sensor/botón de puerta (o, si no hay uno físico, el botón "Simular puerta" de Flet), un LED, una sirena y un receptor IR, monitoreada desde una interfaz Flet.
 
 La idea central: **toda la lógica corre en el Pico**. Flet solo muestra lo que pasa. Si se apaga el PC, se cierra la ventana o se cae el WiFi, la alarma sigue decidiendo y sonando.
 
 ```text
-  Botón (puerta) ─┐                                    ┌─► LED  (fijo = activa, parpadea = disparada)
-  Receptor IR ────┼─► AlarmController (estado) ────────┼─► Sirena (buzzer)
-                  │        │  (todo esto es local, en el Pico)
-                  │        └─► Node ─► MQTTTransport ──► broker MQTT ──► Flet (solo lectura)
+  Botón/sensor (puerta) ─┐                              ┌─► LED  (fijo = activa, parpadea = disparada)
+  Receptor IR ───────────┼─► AlarmController (estado) ──┼─► Sirena (buzzer)
+                         │        │  (todo esto es local, en el Pico)
+                         │        └─► Node ─► MQTTTransport ──► broker MQTT ──► Flet (mayormente lectura)
+        botón "Simular puerta" de Flet ──► sim/door_set ──────────────┘
+        (para grupos sin sensor de puerta físico: solo el receptor IR)
 ```
 
 ## Requisitos de la pizarra y qué prueba cada uno
@@ -65,6 +67,7 @@ taller_05_alarma/
 │   ├── wifi.py                #   WiFi no bloqueante
 │   ├── safe_scheduler.py      #   Scheduler de PicoROS que no muere si una tarea falla
 │   ├── ir_calibration.py      #   herramienta para aprender los códigos de SU control
+│   ├── ir_diagnose.py         #   ve en vivo cada código IR y si arma bien la clave
 │   └── .env.example           #   formato del archivo con la contraseña del WiFi
 ├── flet_ui/                   # interfaz (se llama flet_ui para no tapar al paquete flet)
 │   ├── main.py                #   la pantalla
@@ -82,11 +85,13 @@ Los pines están en [`micropython/config.py`](micropython/config.py); si el mont
 | Componente | Pin por defecto | Conexión |
 |---|---|---|
 | Receptor IR (Vout) | `GP22` | Vcc → 3V3, GND → GND (igual que el taller) |
-| Puerta (botón) | `GP16` | Botón entre **3V3** y `GP16`. Pulsado = `1` = **abierta**. Se usa el pull-down interno |
+| Puerta (botón) | `GP16` | Opcional. Botón entre **3V3** y `GP16`. Pulsado = `1` = **abierta**. Se usa el pull-down interno |
 | LED de estado | `GP0` | Con resistencia en serie hacia GND |
 | Sirena (buzzer activo) | `GP2` | Opcional. Con `SIREN_GPIO = None` el LED parpadea como sirena |
 
 > ⚠️ La Pico trabaja a **3.3 V**. No conectar señales de 5 V a un GPIO. Un buzzer que consuma más de unos pocos mA debe ir con transistor, no directo al GPIO.
+
+Si su grupo no tiene un sensor/botón de puerta físico (solo el receptor IR), no hay que cablear `GP16`: la puerta se simula por software con el botón **Abrir/Cerrar** de la interfaz Flet (ver §4 y el tópico `sim/door_set` en el contrato MQTT). Si sí tienen un sensor físico, ambas entradas conviven: manda la última que cambie.
 
 Si el sensor de puerta es un interruptor normalmente cerrado (reed switch), se ajustan `DOOR_OPEN_LEVEL` y `DOOR_PULL` en `config.py`.
 
@@ -132,7 +137,7 @@ python -m flet_ui.main
 
 Muestra: estado de la alarma (con parpadeo rojo al dispararse), puerta abierta/cerrada, progreso de la clave (●●○○), claves incorrectas, bitácora de eventos, telemetría del Pico (RAM, WiFi, temperatura, tiempo activo) y si el Pico está en línea.
 
-Si el Pico se cae, la tarjeta se atenúa y aparece un aviso: *"la alarma sigue funcionando en el dispositivo"*. Es casi una ventana de **solo lectura**: no puede armar ni desarmar la alarma. La única excepción son los botones **Abrir / Cerrar** de la tarjeta "PUERTA 1", que sirven para simular la puerta al probar con `tools/pico_simulator.py` (ver §6); contra el hardware real no hacen nada, porque ahí la puerta es el sensor físico.
+Si el Pico se cae, la tarjeta se atenúa y aparece un aviso: *"la alarma sigue funcionando en el dispositivo"*. Es casi una ventana de **solo lectura**: no puede armar ni desarmar la alarma con la clave (eso solo se digita en el control IR). La única excepción son los botones **Abrir / Cerrar** de la tarjeta "PUERTA 1": simulan la puerta tanto contra `tools/pico_simulator.py` como contra el Pico real, para los grupos que no tengan un sensor de puerta físico cableado (si sí lo tienen, el sensor real manda igual).
 
 ## 5. Grupos: cambien el `PREFIX`
 
@@ -153,7 +158,7 @@ Levanta un Pico virtual que usa la **misma** lógica de la alarma y publica por 
 | `s` | muestra el estado |
 | `q` | salir |
 
-Los botones de la puerta publican en `sim/door_set`, un tópico que solo escucha el Pico virtual: contra el hardware real no hacen nada, porque ahí la puerta es siempre el sensor físico y la Pico real no se suscribe a ningún tópico de la alarma.
+Los botones de la puerta publican en `sim/door_set`. Lo escucha tanto este Pico virtual como el Pico real: si su grupo no tiene un sensor de puerta físico (solo el receptor IR), estos botones son la única forma de simular la puerta contra el hardware real también.
 
 Escenario para la demo: `1234` (activa) → botón **Abrir** (dispara por intrusión) → `1234` (silencia) → `9999` (dispara por clave equivocada) → `1234` (silencia).
 
@@ -179,7 +184,7 @@ Los tests de GitHub Actions están en `.github/workflows/taller-05-alarma.yml` (
 
 ## Contrato MQTT
 
-Los tópicos van precedidos por el `PREFIX`. El Pico **real** no escucha ningún tópico de la alarma (solo `node/get_second_ts`, la medición de latencia que trae `Node` de PicoROS): nadie puede inyectar teclas ni cambiar el estado por MQTT. El Pico **virtual** del simulador es la única excepción: escucha `sim/door_set` para que la puerta se pueda simular desde el botón de Flet.
+Los tópicos van precedidos por el `PREFIX`. El Pico no escucha ningún tópico de la alarma para armar/desarmar ni para inyectar teclas (eso solo entra por el control IR); la única excepción es `sim/door_set`, pensado para los grupos que no tienen un sensor de puerta físico cableado (solo el receptor IR), y que también escucha `node/get_second_ts` para la medición de latencia que trae `Node` de PicoROS.
 
 | Tópico | Retenido | Contenido |
 |---|---|---|
@@ -187,7 +192,7 @@ Los tópicos van precedidos por el `PREFIX`. El Pico **real** no escucha ningún
 | `alarm/event` | no | `{"seq","event","detail","uptime_s"}` — bitácora (`armed`, `disarmed`, `triggered`, `wrong_password`, `door`, `keys_cleared`) |
 | `node/online` | sí | `{"online": bool}` — el broker publica `false` (Last Will) si el Pico se cae |
 | `watchdog/stats` | no | telemetría del `WatchdogTask` de PicoROS |
-| `sim/door_set` | no | `{"door_open": bool}` — Flet → Pico virtual; solo lo escucha `tools/pico_simulator.py` |
+| `sim/door_set` | no | `{"door_open": bool}` — Flet → Pico (real o virtual); botón "Simular puerta" de la UI |
 
 `state` ∈ `disarmed` · `armed` · `triggered`. `reason` ∈ `door_open` · `wrong_password` · `null`.
 

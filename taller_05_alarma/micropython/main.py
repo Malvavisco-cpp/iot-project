@@ -57,6 +57,25 @@ def make_door_pin():
     return Pin(pin_id(config.DOOR_GPIO), Pin.IN, pull)
 
 
+class DoorPin:
+    """La puerta la manda el sensor físico si hay uno cableado; si no (como en
+    este grupo, donde lo único conectado es el receptor IR), la maneja el botón
+    Abrir/Cerrar de Flet vía MQTT (`sim/door_set`). Lo último que cambie manda.
+    """
+
+    def __init__(self, hardware_pin):
+        self._hardware_pin = hardware_pin
+        self._override = None
+
+    def value(self, new=None):
+        if new is not None:
+            self._override = new
+            return None
+        if self._override is not None:
+            return self._override
+        return self._hardware_pin.value()
+
+
 def main():
     board_id = ubinascii.hexlify(machine.unique_id()).decode()
     # El id de cliente MQTT debe ser único: si dos placas usan el mismo, el broker
@@ -78,9 +97,10 @@ def main():
         siren_pin = Pin(pin_id(config.SIREN_GPIO), Pin.OUT)
     led_pin = Pin(pin_id(config.LED_GPIO), Pin.OUT)
 
+    door_pin = DoorPin(make_door_pin())
     runtime = AlarmRuntime(
         controller,
-        door_pin=make_door_pin(),
+        door_pin=door_pin,
         led_pin=led_pin,
         siren_pin=siren_pin,
         publish=node.publish,
@@ -104,6 +124,15 @@ def main():
         should_defer=lambda: controller.keys_entered > 0,
         on_connect=runtime.mark_dirty,
     )
+
+    def on_door_sim(topic, msg):
+        try:
+            messages.validate_door_set(msg)
+        except (ValueError, TypeError):
+            return
+        door_pin.value(1 if msg["door_open"] else 0)
+
+    node.subscribe(messages.TOPIC_DOOR_SIM, on_door_sim)
 
     AlarmTask(scheduler, runtime, period_ms=config.ALARM_PERIOD_MS)
 

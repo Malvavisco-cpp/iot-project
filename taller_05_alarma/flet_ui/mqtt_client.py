@@ -1,10 +1,10 @@
 """Cliente MQTT de la interfaz (paho-mqtt 2.x).
 
 Escucha los tópicos de la alarma y, además, publica el único comando que la UI
-envía: el botón "simular puerta" (`common.messages.TOPIC_DOOR_SIM`), que solo
-escucha el Pico virtual (`tools/pico_simulator.py`). El resto sigue siendo de
-solo lectura: la Pico real no se suscribe a nada, así que no puede armar ni
-desarmar la alarma por MQTT.
+envía: el botón "simular puerta" (`common.messages.TOPIC_DOOR_SIM`), que
+escuchan tanto el Pico virtual (`tools/pico_simulator.py`) como el Pico real
+(para los grupos sin sensor de puerta físico). El resto sigue siendo de solo
+lectura: ningún otro tópico se puede usar para armar ni desarmar la alarma.
 """
 
 import json

@@ -32,7 +32,10 @@ class KeypadIR(IRIn):
         self.new_code = False
 
         if bits < self.min_bits:
+            print("IR: 0x%X (%d bits, descartado: ruido o repetición)" % (code, bits))
             return
+
+        print("IR: 0x%X (%d bits)" % (code, bits))
 
         if self.raw_topic and self.pubsub:
             self.pubsub.publish(self.raw_topic, {"value": code})

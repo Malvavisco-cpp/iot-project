@@ -8,12 +8,13 @@ Los tópicos van SIN prefijo; el transporte MQTT antepone `config.PREFIX`.
       node/online     (retenido)  {"online": bool}; el broker publica false si el Pico cae
       watchdog/stats              telemetría de PicoROS (memoria, RSSI, tiempos)
 
-    Flet -> Pico virtual
+    Flet -> Pico (real o virtual)
       sim/door_set                {"door_open": bool}; botón "simular puerta" de la UI.
-                                   Solo lo escucha tools/pico_simulator.py: la Pico real
-                                   no se suscribe a ningún tópico de la alarma, así que
-                                   este comando no tiene efecto contra el hardware real
-                                   (ahí la puerta es el sensor físico, no un botón).
+                                   Lo escuchan tanto tools/pico_simulator.py como
+                                   micropython/main.py. Si el grupo sí tiene un sensor
+                                   de puerta físico cableado, ese sensor manda igual;
+                                   este comando solo importa para los grupos que no
+                                   tienen sensor físico (solo el receptor IR).
 
 Fuera de ese comando de simulación, Flet no envía nada: la clave solo se digita
 en el control IR, así que la interfaz no puede armar ni desarmar la alarma.

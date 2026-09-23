@@ -5,9 +5,9 @@ Ejecutar desde la carpeta del taller:   python -m flet_ui.main
 Mayormente solo muestra: la clave se digita únicamente en el control IR, así que
 esta ventana no puede armar ni desarmar la alarma, y si se cierra (o el PC se
 apaga) la alarma sigue funcionando en el Pico. La única acción que sí envía es
-el botón "simular puerta", pensado para el Pico virtual (`tools/pico_simulator.py`):
-contra el hardware real no tiene efecto, porque ahí la puerta es un sensor físico
-y la Pico real no escucha comandos por MQTT.
+el botón "simular puerta" (topico `sim/door_set`): lo escuchan tanto el Pico
+virtual (`tools/pico_simulator.py`) como el Pico real, para los grupos que no
+tengan un sensor de puerta físico cableado (solo el receptor IR).
 """
 
 import threading
@@ -166,7 +166,7 @@ class AlarmView:
         door_column = ft.Column(
             [
                 door_card,
-                ft.Text("Simular puerta (solo Pico virtual):", size=11, color=ft.Colors.BLUE_GREY_300),
+                ft.Text("Simular puerta:", size=11, color=ft.Colors.BLUE_GREY_300),
                 ft.Row([self.door_sim_open_btn, self.door_sim_close_btn], spacing=8),
             ],
             spacing=6,
@@ -285,13 +285,22 @@ class AlarmView:
         with self._lock:
             changed = self.monitor.handle_message(topic, payload)
         if changed:
-            self.render()
+            self._request_render()
 
     def on_link(self, connected: bool, detail: str) -> None:
         with self._lock:
             self._broker_ok = connected
             self._broker_detail = detail or "desconectado"
-        self.render()
+        self._request_render()
+
+    def _request_render(self) -> None:
+        """MQTT llama a esto desde el hilo de paho-mqtt, no desde el de Flet.
+
+        En Flet 1.0, page.update() desde un hilo que Flet no creó no llega a
+        pintarse: hay que reencolarlo en el executor de la página con
+        run_thread(), que sí deja el contexto de la página listo.
+        """
+        self.page.run_thread(self.render)
 
     # -------------------------------------------------------- salida (botón)
 
@@ -336,7 +345,7 @@ def main(page: ft.Page) -> None:
 
     page.on_close = on_close
     client.start()
-    threading.Thread(target=view.run_ticker, daemon=True).start()
+    page.run_thread(view.run_ticker)
 
 
 if __name__ == "__main__":

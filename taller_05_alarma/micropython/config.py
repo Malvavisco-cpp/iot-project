@@ -26,7 +26,7 @@ DOOR_DEBOUNCE_MS = 50
 
 # --- Alarma -----------------------------------------------------------------
 ALARM_PASSWORD = "1234"        # <- cambiar; exactamente PASSWORD_LENGTH dígitos
-KEY_TIMEOUT_MS = 5000          # una clave a medias se descarta tras este tiempo
+KEY_TIMEOUT_MS = 12000         # una clave a medias se descarta tras este tiempo
 IR_KEYMAP = DEFAULT_IR_KEYMAP  # <- pegar aquí el resultado de ir_calibration.py
 IR_MIN_BITS = 8                # tramas más cortas (ruido / repetición) se ignoran
 PUBLISH_RAW_IR = False         # True publica cada código en IRIn/value: SOLO para depurar
