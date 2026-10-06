@@ -16,7 +16,7 @@ from machine import PWM, Pin
 import config
 from common import messages
 from common.car import Car
-from common.motor import Motor
+from common.motor import MiniMotor, Motor
 
 from car_task import CarTask
 from mqtt import MQTTTransport
@@ -34,12 +34,18 @@ def read_wifi_password():
         return None
 
 
-def make_motor(pwm_gpio, in1_gpio, in2_gpio, inverted):
-    pwm = PWM(Pin(pwm_gpio))
+def make_pwm(gpio):
+    pwm = PWM(Pin(gpio))
     pwm.freq(config.MOTOR_PWM_FREQ_HZ)
     pwm.duty_u16(0)
+    return pwm
+
+
+def make_motor(pwm_gpio, in1_gpio, in2_gpio, inverted):
+    if config.MOTOR_DRIVER == "mini":
+        return MiniMotor(make_pwm(in1_gpio), make_pwm(in2_gpio), config.MAX_WHEEL_SPEED_M_S, inverted)
     return Motor(
-        pwm,
+        make_pwm(pwm_gpio),
         Pin(in1_gpio, Pin.OUT, value=0),
         Pin(in2_gpio, Pin.OUT, value=0),
         config.MAX_WHEEL_SPEED_M_S,

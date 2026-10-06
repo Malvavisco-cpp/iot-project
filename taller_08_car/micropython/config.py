@@ -20,18 +20,22 @@ WIFI_PASSWORD_FILE = ".env"    # archivo en el Pico con SOLO la contraseña del 
 # --- MQTT -----------------------------------------------------------------
 NODE_NAME = "car_node"         # main.py le agrega el id único de la placa
 
-# --- Pines del puente H (números GPIO de la Pico) --------------------------
+# --- Puente H ---------------------------------------------------------------
+# "mini": L298N mini (placa roja pequeña): solo IN1..IN4, el PWM va por los IN.
+# "l298n": L298N grande o TB6612: ENA/ENB (o PWMA/PWMB) para la velocidad + IN1..IN4.
+MOTOR_DRIVER = "mini"
+
+# Números GPIO de la Pico (GP2 = 2), no el número de pata física.
 # Ajústenlos para que coincidan con el diagrama de conexiones de la clase.
-# Puente tipo L298N (ENA/IN1/IN2, ENB/IN3/IN4) o TB6612 (PWMA/AIN1/AIN2, ...).
-LEFT_PWM_GPIO = 2              # ENA  (L298N)  / PWMA (TB6612)
-LEFT_IN1_GPIO = 3              # IN1           / AIN1
-LEFT_IN2_GPIO = 4              # IN2           / AIN2
+LEFT_IN1_GPIO = 2              # IN1  (L298N mini)  / IN1  (L298N) / AIN1 (TB6612)
+LEFT_IN2_GPIO = 3              # IN2                / IN2          / AIN2
+RIGHT_IN1_GPIO = 6             # IN3                / IN3          / BIN1
+RIGHT_IN2_GPIO = 7             # IN4                / IN4          / BIN2
 
-RIGHT_PWM_GPIO = 6             # ENB           / PWMB
-RIGHT_IN1_GPIO = 7             # IN3           / BIN1
-RIGHT_IN2_GPIO = 8             # IN4           / BIN2
-
-STBY_GPIO = None               # solo TB6612: pin STBY (se deja en 1). L298N: None
+# Solo si MOTOR_DRIVER = "l298n" (el mini no tiene estos pines):
+LEFT_PWM_GPIO = 4              # ENA (L298N) / PWMA (TB6612)
+RIGHT_PWM_GPIO = 8             # ENB (L298N) / PWMB (TB6612)
+STBY_GPIO = None               # solo TB6612: pin STBY (se deja en 1)
 
 # True si esa rueda gira al revés de lo esperado con un comando de "adelante".
 LEFT_INVERTED = False

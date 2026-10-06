@@ -16,7 +16,7 @@ incluidos los archivos base de PicoROS. No se asume nada cargado en la placa.
 |---|---|---|
 | Cinemática diferencial (directa e inversa) | `common/kinematics.py` | `tests/common/test_kinematics.py` |
 | Clase **CAR**: se suscribe a los tópicos y avanza con `v` y `w` durante `t` | `common/car.py` | `tests/common/test_car.py` |
-| Motores (puente H) | `common/motor.py` | `tests/common/test_motor.py` |
+| Motores (L298N mini, L298N grande / TB6612) | `common/motor.py` | `tests/common/test_motor.py` |
 | Flet: línea recta 1 m, 1/4 de círculo R = 1 m a derecha e izquierda | `flet_ui/main.py` + `common/maneuvers.py` | `tests/common/test_maneuvers.py` |
 | Tópicos | `common/messages.py` | `tests/common/test_messages.py` |
 
@@ -52,7 +52,7 @@ taller_08_car/
 │   ├── kinematics.py        #   cinemática directa / inversa e integración de la pose
 │   ├── maneuvers.py         #   recta y arcos como comandos (v, w, t)
 │   ├── messages.py          #   tópicos + validación
-│   ├── motor.py             #   Motor: un motor DC detrás del puente H
+│   ├── motor.py             #   MiniMotor (L298N mini) y Motor (L298N grande / TB6612)
 │   └── car.py               #   Car: la clase del taller
 ├── micropython/             # -> se sube a la RAÍZ del Pico
 │   ├── main.py              #   punto de entrada (arranca solo)
@@ -84,21 +84,25 @@ taller_08_car/
 
 ### 1. Conexiones
 
-Ajusten los pines en [`micropython/config.py`](micropython/config.py) para que coincidan con el diagrama de conexiones de la clase (`CAR_HW.png`). Por defecto:
+Ajusten los pines en [`micropython/config.py`](micropython/config.py) para que coincidan con el diagrama de conexiones de la clase (`CAR_HW.png`). Los números son **GPIO** (`GP2` = `2`), no el número de pata física.
 
-| Pico | Puente H (L298N / TB6612) | |
+**L298N mini** (placa roja pequeña, `MOTOR_DRIVER = "mini"`, el valor por defecto). No tiene ENA/ENB: la velocidad va con PWM directo en los IN.
+
+| Pico | L298N mini | |
 |---|---|---|
-| `GP2` | ENA / PWMA | PWM motor izquierdo |
-| `GP3` | IN1 / AIN1 | dirección motor izquierdo |
-| `GP4` | IN2 / AIN2 | dirección motor izquierdo |
-| `GP6` | ENB / PWMB | PWM motor derecho |
-| `GP7` | IN3 / BIN1 | dirección motor derecho |
-| `GP8` | IN4 / BIN2 | dirección motor derecho |
-| `GND` | GND | **tierra común** (obligatoria) |
-| — | OUT1/OUT2, OUT3/OUT4 (A01/A02, B01/B02) | motores izquierdo y derecho |
-| — | +12V / VM | batería de los motores |
+| `GP2` | IN1 | motor izquierdo (PWM = adelante) |
+| `GP3` | IN2 | motor izquierdo (PWM = atrás) |
+| `GP6` | IN3 | motor derecho (PWM = adelante) |
+| `GP7` | IN4 | motor derecho (PWM = atrás) |
+| `GND` | `-` (GND) | **tierra común** (obligatoria) |
+| — | MOTOR-A, MOTOR-B | motores izquierdo y derecho |
+| — | `+` / `-` | batería de los motores (2–10 V) |
 
-> ⚠️ Los motores **no** se alimentan del Pico: van con su propia batería al puente H, y la tierra se comparte con el Pico. En el **L298N** quiten los jumpers de **ENA** y **ENB** (si no, el PWM no hace nada y van siempre a tope). En el **TB6612** el pin **STBY** debe ir a 3V3, o pongan su GPIO en `STBY_GPIO` y el código lo deja en 1.
+**L298N grande o TB6612** (`MOTOR_DRIVER = "l298n"`): además de IN1..IN4 usan `LEFT_PWM_GPIO` (ENA/PWMA, `GP4`) y `RIGHT_PWM_GPIO` (ENB/PWMB, `GP8`). En el L298N grande quiten los jumpers de ENA y ENB; en el TB6612 el pin STBY va a 3V3 (o a `STBY_GPIO`).
+
+> ⚠️ Los motores **no** se alimentan del Pico: van con su propia batería al puente H, y la tierra se comparte con el Pico.
+>
+> Con el mini, los dos pines de un mismo motor no pueden compartir canal PWM del Pico. Por ejemplo, `GP0` y `GP16` comparten canal. Usen dos pines seguidos, como `GP2`/`GP3` o `GP6`/`GP7`, y no hay problema.
 
 ### 2. Configurar antes de subir
 
@@ -209,6 +213,6 @@ Ningún comando dura más de `MAX_COMMAND_S` (30 s): si se cae la red a mitad de
 | `WiFi: reintentando, status = -2` | No encuentra la red: `WIFI_SSID` mal escrito o red de 5 GHz |
 | `WiFi: reintentando, status = -3` | Contraseña mal en `.env` |
 | Flet dice "Carro: sin datos" | `PREFIX` distinto entre el PC y el Pico, o el Pico sin WiFi |
-| Las ruedas no giran pero la Shell imprime `Car: v=...` | Jumpers ENA/ENB del L298N puestos, batería de motores, tierra común, o `STBY` del TB6612 |
-| Siempre giran a tope | Jumpers ENA/ENB puestos (L298N) |
+| Las ruedas no giran pero la Shell imprime `Car: v=...` | `MOTOR_DRIVER` no corresponde a su placa, batería de motores, tierra común, o `STBY` del TB6612 |
+| Siempre giran a tope (L298N grande) | Jumpers ENA/ENB puestos |
 | Se va hacia un lado en la recta | Un motor más rápido que el otro: es normal en motores baratos; bajen la rapidez o compensen con `w` en el comando manual |

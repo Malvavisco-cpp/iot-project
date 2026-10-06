@@ -1,6 +1,6 @@
 import pytest
 
-from common.motor import Motor
+from common.motor import MiniMotor, Motor
 
 
 class FakePWM:
@@ -64,3 +64,48 @@ def test_zero_speed_stops():
 
     assert (pwm.duty, in1.level, in2.level) == (0, 0, 0)
     assert motor.speed == 0.0
+
+
+# --------------------------------------------------------------------------
+# L298N mini: PWM directo en IN1/IN2
+# --------------------------------------------------------------------------
+
+def make_mini(inverted=False):
+    in1, in2 = FakePWM(), FakePWM()
+    return MiniMotor(in1, in2, max_speed=0.5, inverted=inverted), in1, in2
+
+
+def test_mini_starts_stopped():
+    _, in1, in2 = make_mini()
+    assert (in1.duty, in2.duty) == (0, 0)
+
+
+def test_mini_forward_puts_pwm_on_in1():
+    motor, in1, in2 = make_mini()
+    motor.set_speed(0.25)
+
+    assert in1.duty == pytest.approx(65535 / 2, abs=1)
+    assert in2.duty == 0
+
+
+def test_mini_backward_puts_pwm_on_in2():
+    motor, in1, in2 = make_mini()
+    motor.set_speed(-0.25)
+
+    assert in1.duty == 0
+    assert in2.duty == pytest.approx(65535 / 2, abs=1)
+
+
+def test_mini_inverted_swaps_the_pins():
+    motor, in1, in2 = make_mini(inverted=True)
+    motor.set_speed(0.25)
+    assert in1.duty == 0 and in2.duty > 0
+
+
+def test_mini_saturates_and_stops():
+    motor, in1, in2 = make_mini()
+    motor.set_speed(9.0)
+    assert in1.duty == 65535
+
+    motor.set_speed(0)
+    assert (in1.duty, in2.duty) == (0, 0)
