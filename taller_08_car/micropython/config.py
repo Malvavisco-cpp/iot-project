@@ -43,5 +43,10 @@ RIGHT_INVERTED = False
 
 MOTOR_PWM_FREQ_HZ = 1000
 
+# Fracción del PWM (0-1) con la que el motor apenas arranca. A PWM bajo el motor
+# zumba pero no gira (zona muerta): con v = 0.2 de 0.5 m/s solo le llegaría 40 %.
+# Súbalo si no arranca; bájelo si arranca "de golpe". Calíbrelo con el README (§6).
+MOTOR_MIN_DUTY = 0.5
+
 # --- Tiempos --------------------------------------------------------------
 CAR_PERIOD_MS = 20             # cada cuánto se revisa si ya se cumplió t

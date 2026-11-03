@@ -43,13 +43,14 @@ def make_pwm(gpio):
 
 def make_motor(pwm_gpio, in1_gpio, in2_gpio, inverted):
     if config.MOTOR_DRIVER == "mini":
-        return MiniMotor(make_pwm(in1_gpio), make_pwm(in2_gpio), config.MAX_WHEEL_SPEED_M_S, inverted)
+        return MiniMotor(make_pwm(in1_gpio), make_pwm(in2_gpio), config.MAX_WHEEL_SPEED_M_S, inverted, config.MOTOR_MIN_DUTY)
     return Motor(
         make_pwm(pwm_gpio),
         Pin(in1_gpio, Pin.OUT, value=0),
         Pin(in2_gpio, Pin.OUT, value=0),
         config.MAX_WHEEL_SPEED_M_S,
         inverted,
+        config.MOTOR_MIN_DUTY,
     )
 
 

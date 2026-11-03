@@ -172,8 +172,9 @@ La tarjeta "Último comando" muestra `v`, `w`, `t` y lo que le toca a cada rueda
 
 1. **Sentido de giro.** Comando manual `v=0.1, w=0, t=2`: las dos ruedas deben girar hacia adelante. Si una gira al revés, pongan `LEFT_INVERTED` o `RIGHT_INVERTED = True` en `micropython/config.py`.
 2. **Izquierda/derecha.** Comando manual `v=0, w=1, t=2` (giro a la izquierda sobre su centro): la rueda **derecha** va hacia adelante y la izquierda hacia atrás. Si es al contrario, intercambien los pines `LEFT_*` con los `RIGHT_*`.
-3. **Rapidez máxima** (en el piso). Botón **Línea recta 1 m** y midan cuánto avanzó de verdad (`D`, en metros). Pongan `MAX_WHEEL_SPEED_M_S = valor_actual × D`. Ej.: avanzó 0.8 m con 0.5 → `0.4`.
-4. **d (opcional, ajuste fino).** Comando manual `v=0, w=1, t=6.28` (una vuelta completa). Si giró `A` grados, `WHEEL_HALF_TRACK_M = valor_actual × 360 / A`.
+3. **El motor zumba pero no gira.** Con un PWM bajo el motor no vence la fricción (zona muerta). `MOTOR_MIN_DUTY` (por defecto `0.5`) es el PWM mínimo que se aplica a cualquier rapidez distinta de 0. Prueben el comando manual `v=0.05, w=0, t=2`: si no arranca, súbanlo (`0.6`, `0.7`...); si arranca de golpe, bájenlo.
+4. **Rapidez máxima** (en el piso). Botón **Línea recta 1 m** y midan cuánto avanzó de verdad (`D`, en metros). Pongan `MAX_WHEEL_SPEED_M_S = valor_actual × D`. Ej.: avanzó 0.8 m con 0.5 → `0.4`.
+5. **d (opcional, ajuste fino).** Comando manual `v=0, w=1, t=6.28` (una vuelta completa). Si giró `A` grados, `WHEEL_HALF_TRACK_M = valor_actual × 360 / A`.
 
 Después de cada cambio de configuración: vuelvan a subir el archivo que cambiaron (`common/config.py` o `config.py`) y reinicien el Pico.
 
@@ -215,4 +216,5 @@ Ningún comando dura más de `MAX_COMMAND_S` (30 s): si se cae la red a mitad de
 | Flet dice "Carro: sin datos" | `PREFIX` distinto entre el PC y el Pico, o el Pico sin WiFi |
 | Las ruedas no giran pero la Shell imprime `Car: v=...` | `MOTOR_DRIVER` no corresponde a su placa, batería de motores, tierra común, o `STBY` del TB6612 |
 | Siempre giran a tope (L298N grande) | Jumpers ENA/ENB puestos |
+| Las ruedas zumban pero no giran con `v` bajo (con PWM al 100 % sí) | Zona muerta del motor: suban `MOTOR_MIN_DUTY` en `micropython/config.py` (§6) |
 | Se va hacia un lado en la recta | Un motor más rápido que el otro: es normal en motores baratos; bajen la rapidez o compensen con `w` en el comando manual |

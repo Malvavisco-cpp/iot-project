@@ -109,3 +109,29 @@ def test_mini_saturates_and_stops():
 
     motor.set_speed(0)
     assert (in1.duty, in2.duty) == (0, 0)
+
+
+# --------------------------------------------------------------------------
+# Zona muerta: duty mínimo para que el motor arranque
+# --------------------------------------------------------------------------
+
+def test_min_duty_lifts_slow_speeds_and_keeps_full_scale():
+    in1, in2 = FakePWM(), FakePWM()
+    motor = MiniMotor(in1, in2, max_speed=0.5, min_duty=0.5)
+
+    motor.set_speed(0.001)  # casi nada: igual debe arrancar
+    assert in1.duty == pytest.approx(0.5 * 65535, abs=2)
+
+    motor.set_speed(0.5)
+    assert in1.duty == 65535
+
+    motor.set_speed(0)
+    assert (in1.duty, in2.duty) == (0, 0)
+
+
+def test_min_duty_also_applies_to_the_enable_pin_motor():
+    pwm, in1, in2 = FakePWM(), FakePin(), FakePin()
+    motor = Motor(pwm, in1, in2, max_speed=0.5, min_duty=0.6)
+    motor.set_speed(-0.2)
+    assert (in1.level, in2.level) == (0, 1)
+    assert pwm.duty == pytest.approx((0.6 + 0.4 * 0.4) * 65535, abs=2)
