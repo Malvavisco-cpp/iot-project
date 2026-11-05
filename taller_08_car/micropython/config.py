@@ -43,6 +43,12 @@ RIGHT_INVERTED = False
 
 MOTOR_PWM_FREQ_HZ = 1000
 
+# Calibración de la recta: factor de cada rueda. Si el carro se va hacia la
+# izquierda, la rueda derecha es la rápida: bájela (RIGHT_GAIN = 0.98). Si se va
+# hacia la derecha, baje LEFT_GAIN. Ajuste de a 0.01 y repita la recta de 1 m.
+LEFT_GAIN = 1.0
+RIGHT_GAIN = 1.0
+
 # Fracción del PWM (0-1) con la que el motor apenas arranca. A PWM bajo el motor
 # zumba pero no gira (zona muerta): con v = 0.2 de 0.5 m/s solo le llegaría 40 %.
 # Súbalo si no arranca; bájelo si arranca "de golpe". Calíbrelo con el README (§6).

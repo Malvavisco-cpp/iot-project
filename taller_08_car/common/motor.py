@@ -20,13 +20,15 @@ def duty_for(speed, max_speed, min_duty=0.0):
 
 class Motor:
 
-    def __init__(self, pwm, in1, in2, max_speed, inverted=False, min_duty=0.0):
+    def __init__(self, pwm, in1, in2, max_speed, inverted=False, min_duty=0.0, gain=1.0):
         """
         max_speed: rapidez lineal de la rueda (m/s) con el PWM al 100 %.
         inverted:  True si al mandar "adelante" la rueda gira hacia atrás (los
                    dos motores de un diferencial suelen ir montados en espejo).
         min_duty:  fracción (0-1) del PWM con la que el motor apenas arranca; toda
                    rapidez distinta de 0 usa al menos este duty.
+        gain:      factor de calibración de esta rueda (0.97 = 3 % más lenta).
+                   Se baja en la rueda que resulte más rápida para ir recto.
         """
         self.pwm = pwm
         self.in1 = in1
@@ -34,6 +36,7 @@ class Motor:
         self.max_speed = max_speed
         self.inverted = inverted
         self.min_duty = min_duty
+        self.gain = gain
         self.speed = 0.0
         self.stop()
 
@@ -45,7 +48,7 @@ class Motor:
         forward = (speed > 0) != self.inverted
         self.in1.value(1 if forward else 0)
         self.in2.value(0 if forward else 1)
-        self.pwm.duty_u16(duty_for(speed, self.max_speed, self.min_duty))
+        self.pwm.duty_u16(duty_for(speed * self.gain, self.max_speed, self.min_duty))
         self.speed = speed
 
     def stop(self):
@@ -65,12 +68,13 @@ class MiniMotor:
     in1 / in2: objetos con `.duty_u16(int)` (p. ej. `machine.PWM`).
     """
 
-    def __init__(self, in1, in2, max_speed, inverted=False, min_duty=0.0):
+    def __init__(self, in1, in2, max_speed, inverted=False, min_duty=0.0, gain=1.0):
         self.in1 = in1
         self.in2 = in2
         self.max_speed = max_speed
         self.inverted = inverted
         self.min_duty = min_duty
+        self.gain = gain
         self.speed = 0.0
         self.stop()
 
@@ -79,7 +83,7 @@ class MiniMotor:
         if speed == 0:
             self.stop()
             return
-        duty = duty_for(speed, self.max_speed, self.min_duty)
+        duty = duty_for(speed * self.gain, self.max_speed, self.min_duty)
         forward = (speed > 0) != self.inverted
         self.in1.duty_u16(duty if forward else 0)
         self.in2.duty_u16(0 if forward else duty)

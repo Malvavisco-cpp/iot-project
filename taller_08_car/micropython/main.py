@@ -41,9 +41,9 @@ def make_pwm(gpio):
     return pwm
 
 
-def make_motor(pwm_gpio, in1_gpio, in2_gpio, inverted):
+def make_motor(pwm_gpio, in1_gpio, in2_gpio, inverted, gain):
     if config.MOTOR_DRIVER == "mini":
-        return MiniMotor(make_pwm(in1_gpio), make_pwm(in2_gpio), config.MAX_WHEEL_SPEED_M_S, inverted, config.MOTOR_MIN_DUTY)
+        return MiniMotor(make_pwm(in1_gpio), make_pwm(in2_gpio), config.MAX_WHEEL_SPEED_M_S, inverted, config.MOTOR_MIN_DUTY, gain)
     return Motor(
         make_pwm(pwm_gpio),
         Pin(in1_gpio, Pin.OUT, value=0),
@@ -51,6 +51,7 @@ def make_motor(pwm_gpio, in1_gpio, in2_gpio, inverted):
         config.MAX_WHEEL_SPEED_M_S,
         inverted,
         config.MOTOR_MIN_DUTY,
+        gain,
     )
 
 
@@ -61,8 +62,8 @@ def main():
     if config.STBY_GPIO is not None:
         Pin(config.STBY_GPIO, Pin.OUT, value=1)
 
-    left = make_motor(config.LEFT_PWM_GPIO, config.LEFT_IN1_GPIO, config.LEFT_IN2_GPIO, config.LEFT_INVERTED)
-    right = make_motor(config.RIGHT_PWM_GPIO, config.RIGHT_IN1_GPIO, config.RIGHT_IN2_GPIO, config.RIGHT_INVERTED)
+    left = make_motor(config.LEFT_PWM_GPIO, config.LEFT_IN1_GPIO, config.LEFT_IN2_GPIO, config.LEFT_INVERTED, config.LEFT_GAIN)
+    right = make_motor(config.RIGHT_PWM_GPIO, config.RIGHT_IN1_GPIO, config.RIGHT_IN2_GPIO, config.RIGHT_INVERTED, config.RIGHT_GAIN)
 
     scheduler = SafeScheduler()
     node = Node(prefix=config.PREFIX, node_name=config.NODE_NAME)

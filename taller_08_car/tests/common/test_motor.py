@@ -135,3 +135,10 @@ def test_min_duty_also_applies_to_the_enable_pin_motor():
     motor.set_speed(-0.2)
     assert (in1.level, in2.level) == (0, 1)
     assert pwm.duty == pytest.approx((0.6 + 0.4 * 0.4) * 65535, abs=2)
+
+
+def test_gain_slows_one_wheel_proportionally():
+    in1, in2 = FakePWM(), FakePWM()
+    motor = MiniMotor(in1, in2, max_speed=0.5, gain=0.9)
+    motor.set_speed(0.25)
+    assert in1.duty == pytest.approx(0.5 * 0.9 * 65535, abs=2)
