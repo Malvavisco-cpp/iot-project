@@ -142,3 +142,11 @@ def test_gain_slows_one_wheel_proportionally():
     motor = MiniMotor(in1, in2, max_speed=0.5, gain=0.9)
     motor.set_speed(0.25)
     assert in1.duty == pytest.approx(0.5 * 0.9 * 65535, abs=2)
+
+
+def test_gain_scales_the_final_duty_even_with_a_min_duty_floor():
+    # Con piso 0.5, el PWM de v = 0.25 de 0.5 es 0.75; el factor se aplica a ese 0.75.
+    in1, in2 = FakePWM(), FakePWM()
+    motor = MiniMotor(in1, in2, max_speed=0.5, min_duty=0.5, gain=0.8)
+    motor.set_speed(0.25)
+    assert in1.duty == pytest.approx(0.75 * 0.8 * 65535, abs=2)

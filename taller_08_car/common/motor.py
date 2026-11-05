@@ -8,14 +8,19 @@ dobles en el PC, igual que PWMOut en el taller 07.
 """
 
 
-def duty_for(speed, max_speed, min_duty=0.0):
+def duty_for(speed, max_speed, min_duty=0.0, gain=1.0):
     """Duty u16 para una rapidez distinta de 0.
 
     Un motor DC con carga no arranca con un PWM bajo (zona muerta): por eso el
     rango (0, max_speed] se mapea a [min_duty, 1] en vez de a [0, 1].
+
+    `gain` multiplica el PWM ya calculado (no la rapidez), para que corrija
+    igual a cualquier nivel de PWM; así una rueda más fuerte queda compensada
+    también en las curvas, donde las dos ruedas van a niveles distintos.
     """
     fraction = min(abs(speed) / max_speed, 1.0)
-    return int((min_duty + (1.0 - min_duty) * fraction) * 65535 + 0.5)
+    duty = (min_duty + (1.0 - min_duty) * fraction) * gain
+    return min(int(duty * 65535 + 0.5), 65535)
 
 
 class Motor:
@@ -27,7 +32,7 @@ class Motor:
                    dos motores de un diferencial suelen ir montados en espejo).
         min_duty:  fracción (0-1) del PWM con la que el motor apenas arranca; toda
                    rapidez distinta de 0 usa al menos este duty.
-        gain:      factor de calibración de esta rueda (0.97 = 3 % más lenta).
+        gain:      factor del PWM de esta rueda (0.97 = 3 % menos PWM).
                    Se baja en la rueda que resulte más rápida para ir recto.
         """
         self.pwm = pwm
@@ -48,7 +53,7 @@ class Motor:
         forward = (speed > 0) != self.inverted
         self.in1.value(1 if forward else 0)
         self.in2.value(0 if forward else 1)
-        self.pwm.duty_u16(duty_for(speed * self.gain, self.max_speed, self.min_duty))
+        self.pwm.duty_u16(duty_for(speed, self.max_speed, self.min_duty, self.gain))
         self.speed = speed
 
     def stop(self):
@@ -83,7 +88,7 @@ class MiniMotor:
         if speed == 0:
             self.stop()
             return
-        duty = duty_for(speed * self.gain, self.max_speed, self.min_duty)
+        duty = duty_for(speed, self.max_speed, self.min_duty, self.gain)
         forward = (speed > 0) != self.inverted
         self.in1.duty_u16(duty if forward else 0)
         self.in2.duty_u16(0 if forward else duty)
