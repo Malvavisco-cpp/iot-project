@@ -127,3 +127,12 @@ def test_drive_reports_the_requested_v_w_not_the_corrected_ones():
     d = DiffDrive(left, right, 0.065, 5.0, straight_w_trim=0.6)
     d.drive(0.4, 0.0)
     assert (d.v, d.w) == (0.4, 0.0)
+
+
+def test_arm_without_a_base_servo_ignores_alpha0():
+    shoulder, elbow = FakeServo(), FakeServo()
+    arm = Arm(None, shoulder, elbow)
+    arm.set(90, 30, -30)
+
+    assert shoulder.angle is not None and elbow.angle is not None
+    assert arm.angles == (90, 30, -30)  # alpha0 se guarda (como el gemelo) pero no mueve nada

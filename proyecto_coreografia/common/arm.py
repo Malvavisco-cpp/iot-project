@@ -18,7 +18,8 @@ class Arm:
         self.set(*initial)
 
     def set(self, alpha0, alpha1, alpha2):
-        self.base.set_angle(alpha0)
+        if self.base is not None:  # sin servo de base (SERVO_ALPHA0_GPIO = None) se ignora alpha0
+            self.base.set_angle(alpha0)
         self.shoulder.set_angle(alpha1)
         self.elbow.set_angle(alpha2 - alpha1)
         self.angles = (alpha0, alpha1, alpha2)

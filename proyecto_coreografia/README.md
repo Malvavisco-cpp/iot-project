@@ -1,6 +1,6 @@
 # Proyecto segundo corte — Coreografía
 
-El robot (carro diferencial + brazo de 3 servos) recibe una secuencia de pasos por MQTT y la
+El robot (carro diferencial + brazo de 2 servos) recibe una secuencia de pasos por MQTT y la
 ejecuta **a la hora indicada, sincronizado con su gemelo virtual** (`IoT_ws/coreografia`).
 
 Carpeta autocontenida (como `taller_05_alarma/`, `taller_07_servo/` y `taller_08_car/`): se
@@ -9,7 +9,7 @@ incluidos los archivos base de PicoROS y el driver del OLED. No se asume nada ca
 
 ```text
   Flet ─┬─► motion/state    ─► MotionPlayer ─┬─► DiffDrive ─► 2 motores (L298N mini)
-        │                                    └─► Arm       ─► 3 servos (alpha0, alpha1, alpha2)
+        │                                    └─► Arm       ─► 2 servos (alpha1, alpha2; alpha0 se ignora)
         └─► motion/sequence ─► Choreographer ─► (a la hora run_at, con reloj NTP) ─► MotionPlayer
             (el gemelo virtual recibe exactamente los mismos mensajes)
 
@@ -58,7 +58,7 @@ proyecto_coreografia/
 │   ├── choreographer.py    #   create / delete / schedule / execute_now con run_at
 │   ├── robot.py            #   RobotNode: conecta los tópicos con lo anterior
 │   ├── drive.py            #   DiffDrive: (v, w) -> ruedas (cinemática inversa)
-│   ├── arm.py, servo.py    #   brazo de 3 servos
+│   ├── arm.py, servo.py    #   brazo de 2 servos
 │   ├── motor.py            #   MiniMotor (L298N mini) y Motor (L298N grande / TB6612)
 │   ├── kinematics.py       #   cinemática diferencial (del taller 08)
 │   ├── maneuvers.py        #   recta 1 m y 1/4 de círculo en dm y °
@@ -100,14 +100,15 @@ Pines en [`micropython/config.py`](micropython/config.py). Son números **GPIO**
 |---|---|---|
 | `GP2`, `GP3` | IN1, IN2 del L298N mini | motor izquierdo |
 | `GP6`, `GP7` | IN3, IN4 del L298N mini | motor derecho |
-| `GP10` | señal servo **alpha0** (base) | |
-| `GP11` | señal servo **alpha1** (hombro) | |
-| `GP12` | señal servo **alpha2** (codo) | |
+| `GP11` | señal servo **alpha1** (hombro) | sube y baja todo el brazo |
+| `GP12` | señal servo **alpha2** (codo) | por una varilla extiende y recoge el antebrazo (está en la base) |
 | `GP4` (SDA), `GP5` (SCL) | OLED SSD1306 128x64 I2C | VCC → 3V3, GND → GND |
 | `GP26` (ADC0) | pata **central** del potenciómetro | las otras dos a 3V3 y GND |
 | `GND` | GND del L298N, de los servos y de las baterías | **tierra común obligatoria** |
 
-> ⚠️ **Alimentación:** los motores van con su batería al `+`/`-` del L298N mini. Los **servos van a una fuente de 5 V aparte** (3 servos moviéndose piden más de lo que da el Pico por USB; si se alimentan del Pico, se reinicia en plena coreografía). Todas las tierras unidas.
+> ℹ️ **Dos servos, sin base giratoria.** Este robot tiene solo dos servos, los dos en la base: el del **hombro** (`alpha1`) sube y baja todo el brazo, y el del **codo** (`alpha2`) extiende y recoge el antebrazo con una varilla. `SERVO_ALPHA0_GPIO = None` en `micropython/config.py`: `alpha0_deg` se acepta en los mensajes (el gemelo sí lo usa) pero no mueve nada. Si algún día agregan un servo de giro, pongan su GPIO ahí.
+>
+> ⚠️ **Alimentación:** los motores van con su batería al `+`/`-` del L298N mini. Los **servos van a una fuente de 5 V aparte** (los servos moviéndose piden más de lo que da el Pico por USB; si se alimentan del Pico, se reinicia en plena coreografía). Todas las tierras unidas.
 >
 > ⚠️ **PWM:** dos pines que comparten *slice* comparten frecuencia, y los motores van a 1000 Hz y los servos a 50 Hz. Slice = `(GPIO // 2) % 8`: GP2/3 = 1, GP6/7 = 3, GP10/11 = 5, GP12 = 6 → no chocan. Si cambian pines, revisen que un servo no quede en el mismo slice que un motor (p. ej. **GP18/19 comparten slice con GP2/3**).
 
@@ -194,8 +195,8 @@ Arriba deben ver **Broker: conectado**, **Robot: quieto** y **Hora robot: OK (NT
 
 ### 6. Calibrar el brazo
 
-1. Bloque 1, **Solo brazo** con `0, 0, 0` y 1 s: los tres servos deben quedar como el brazo del gemelo en reposo. Si alguno queda corrido, ajusten su `offset_deg` en `ARM_JOINTS` de `common/config.py`.
-2. `alpha0 = 45`: la base debe girar hacia el **mismo lado** que en el gemelo. Si gira al revés, `inverted: True` en esa articulación. Repitan con `alpha1` y `alpha2`.
+1. Bloque 1, **Solo brazo** con `0, 0, 0` y 1 s: los dos servos deben quedar como el brazo del gemelo en reposo. Si alguno queda corrido, ajusten su `offset_deg` en `ARM_JOINTS` de `common/config.py`.
+2. `alpha1 = 45` y luego `alpha2 = 45`: cada servo debe moverse hacia el **mismo lado** que en el gemelo. Si alguno gira al revés, `inverted: True` en esa articulación. (`alpha0` no mueve nada: no hay servo de base.)
 3. Recuerden que `alpha2` es el ángulo absoluto del antebrazo: `alpha1 = 45, alpha2 = 45` deja el codo **recto** (servo del codo en 0°).
 4. Vuelvan a subir `common/config.py` y reinicien después de cada cambio.
 
