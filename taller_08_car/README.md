@@ -179,6 +179,10 @@ La tarjeta "Último comando" muestra `v`, `w`, `t` y lo que le toca a cada rueda
 
 Después de cada cambio de configuración: vuelvan a subir el archivo que cambiaron (`common/config.py` o `config.py`) y reinicien el Pico.
 
+### Calibración medida de las maniobras
+
+Con `v = 0.4 m/s`, `t = 3.9 s` y `LEFT_GAIN = RIGHT_GAIN = 1.0`, el carro real hizo lo pedido con `w = +0.6` (recta), `+2.175` (izquierda) y `-1.9` (derecha); el teórico de un 1/4 de círculo R = 1 m a esa rapidez es ±0.4. Los botones de la app aplican esa corrección (`common/maneuvers.py: calibrate`, con `STRAIGHT_W_TRIM`, `ARC_W_GAIN_LEFT` y `ARC_W_GAIN_RIGHT` en `common/config.py`): la recta suma `0.6` a `w` y los arcos multiplican su `w` por `5.44` (izquierda) o `4.75` (derecha). El comando manual no se corrige. Si cambian la rapidez o el montaje, vuelvan a medirlos.
+
 ### 7. Probar sin hardware: el simulador
 
 ```bash

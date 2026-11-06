@@ -128,7 +128,12 @@ class CarView:
 
     def _maneuver(self, build):
         try:
-            cmd = build(float(self.speed_field.value))
+            cmd = maneuvers.calibrate(
+                build(float(self.speed_field.value)),
+                config.STRAIGHT_W_TRIM,
+                config.ARC_W_GAIN_LEFT,
+                config.ARC_W_GAIN_RIGHT,
+            )
         except ValueError as e:
             self._error(f"Revise rapidez, distancia y radio: {e}")
             return

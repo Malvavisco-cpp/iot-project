@@ -26,3 +26,13 @@ MAX_COMMAND_S = 30.0
 
 # Rapidez por defecto de las maniobras de la app (m/s).
 DEFAULT_SPEED_M_S = 0.2
+
+# --- Calibración de las maniobras de la app (medida en el carro real) --------
+# Con v = 0.4 m/s y t = 3.9 s, y LEFT_GAIN = RIGHT_GAIN = 1.0, el carro hizo lo
+# pedido con estos w (el teórico de un 1/4 de círculo R = 1 m a esa rapidez es ±0.4):
+#   recta: w = +0.6   izquierda: w = +2.175   derecha: w = -1.9
+# Se guardan como corrección: la recta suma STRAIGHT_W_TRIM, y los arcos
+# multiplican su w teórico (2.175 / 0.4 y 1.9 / 0.4).
+STRAIGHT_W_TRIM = 0.6
+ARC_W_GAIN_LEFT = 5.4375
+ARC_W_GAIN_RIGHT = 4.75

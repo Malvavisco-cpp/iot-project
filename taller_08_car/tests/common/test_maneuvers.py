@@ -63,3 +63,23 @@ def test_non_positive_speed_is_rejected(speed):
 def test_unknown_direction_is_rejected():
     with pytest.raises(ValueError):
         maneuvers.quarter_circle(1.0, 0.2, "up")
+
+
+def test_calibrate_matches_the_measured_values_at_v_04():
+    trim, left, right = 0.6, 5.4375, 4.75
+
+    straight = maneuvers.calibrate(maneuvers.straight(1.0, 0.4), trim, left, right)
+    assert straight["w"] == pytest.approx(0.6)
+
+    l = maneuvers.calibrate(maneuvers.quarter_circle(1.0, 0.4, maneuvers.LEFT), trim, left, right)
+    r = maneuvers.calibrate(maneuvers.quarter_circle(1.0, 0.4, maneuvers.RIGHT), trim, left, right)
+    assert l["w"] == pytest.approx(2.175)
+    assert r["w"] == pytest.approx(-1.9)
+    assert l["t"] == pytest.approx(math.pi / 2 / 0.4)  # el tiempo no se toca (~3.9 s)
+    assert l["v"] == 0.4
+
+
+def test_calibrate_does_not_mutate_the_input():
+    cmd = maneuvers.straight(1.0, 0.2)
+    maneuvers.calibrate(cmd, 0.6, 1.0, 1.0)
+    assert cmd["w"] == 0.0

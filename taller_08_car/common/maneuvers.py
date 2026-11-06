@@ -33,3 +33,19 @@ def arc(radius_m, angle_rad, speed, direction):
 
 def quarter_circle(radius_m, speed, direction):
     return arc(radius_m, math.pi / 2, speed, direction)
+
+
+def calibrate(cmd, straight_trim, gain_left, gain_right):
+    """Corrige un comando teórico para el carro real (motores que no responden lineal).
+
+    Recta (w = 0): suma `straight_trim`. Arcos: multiplica w por la ganancia de su lado.
+    La app manda el resultado; los comandos teóricos de arriba no cambian.
+    """
+    w = cmd["w"]
+    if w == 0:
+        w = straight_trim
+    elif w > 0:
+        w = w * gain_left
+    else:
+        w = w * gain_right
+    return build_cmd(cmd["v"], w, cmd["t"])
