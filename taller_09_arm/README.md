@@ -231,6 +231,18 @@ y midan con una regla desde el eje del hombro: la punta debe quedar a 12 cm haci
 hacia arriba. Si las barras de su MeArm no miden como las del notebook (`B` = `J` = 0.8 dm,
 `M` = 0.25 dm), ajusten `LINKS` en `common/mearm.py`.
 
+### Calibración del carro real (PWM y giros)
+
+Los motores baratos no responden lineal al PWM, así que el carro real necesita tres correcciones. Todas viven en el Pico y **no** afectan al gemelo, que recibe los `(v, w)` teóricos:
+
+| Qué | Dónde | Qué hace |
+|---|---|---|
+| `MOTOR_MIN_DUTY` (`micropython/config.py`) | `common/motor.py` | PWM mínimo (0-1) para que el motor arranque con `v` bajo; sin él zumba y no gira. Por defecto `0.5`. |
+| `LEFT_GAIN`, `RIGHT_GAIN` (`micropython/config.py`) | `common/motor.py` | Factor del **PWM final** de cada rueda (`0.98` = 2 % menos). Bajen la de la rueda más rápida si se va hacia un lado. Por defecto `1.0`. |
+| `STRAIGHT_W_TRIM`, `ARC_W_GAIN_LEFT`, `ARC_W_GAIN_RIGHT` (`common/config.py`) | `common/drive.py` | En una recta (`w = 0`, `v ≠ 0`) suma `STRAIGHT_W_TRIM` a `w`; en un arco multiplica `w` por la ganancia de su lado. Los giros en el sitio (`v = 0`) no se corrigen. |
+
+Los valores por defecto salen de medir en el carro real con `v = 0.4 m/s`, `t = 3.9 s` y las dos ganancias de rueda en `1.0`: hizo lo pedido con `w = +0.6` (recta), `+2.175` (izquierda) y `-1.9` (derecha), cuando el teórico de un 1/4 de círculo R = 1 m a esa rapidez es `±0.4`. De ahí `STRAIGHT_W_TRIM = 0.6`, `ARC_W_GAIN_LEFT = 5.4375` y `ARC_W_GAIN_RIGHT = 4.75`. Es una calibración puntual: con otra rapidez, otro radio o otro montaje, vuelvan a medirla. Para desactivarla, pongan `0`, `1` y `1`. Los cambios en `common/config.py` hay que volver a subirlos al Pico.
+
 ### 7. El gemelo virtual
 
 Los dos gemelos reciben los mismos mensajes que el robot; solo hay que apuntarlos al mismo broker y prefijo.

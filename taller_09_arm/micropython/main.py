@@ -109,6 +109,9 @@ def main():
         make_motor(config.RIGHT_PWM_GPIO, config.RIGHT_IN1_GPIO, config.RIGHT_IN2_GPIO, config.RIGHT_INVERTED, config.RIGHT_GAIN),
         config.WHEEL_HALF_TRACK_M,
         config.MAX_WHEEL_SPEED_M_S,
+        config.STRAIGHT_W_TRIM,
+        config.ARC_W_GAIN_LEFT,
+        config.ARC_W_GAIN_RIGHT,
     )
     arm = MeArm(
         make_servo(config.SERVO_ALPHA0_GPIO, "alpha0"),

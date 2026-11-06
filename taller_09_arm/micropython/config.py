@@ -7,6 +7,9 @@ Los números son GPIO (GP2 = 2), NO el número de pata física.
 """
 
 from common.config import (
+    ARC_W_GAIN_LEFT,
+    ARC_W_GAIN_RIGHT,
+    STRAIGHT_W_TRIM,
     ARM_JOINTS,
     MEARM_CRANK_CENTER_DEG,
     MEARM_MAX_REL_DEG,
