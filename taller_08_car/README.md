@@ -162,7 +162,7 @@ python -m flet_ui.main
 
 Deben ver **"Broker: conectado"** y, cuando el Pico esté en línea, **"Carro: detenido"**. Botones:
 
-* **Línea recta 1 m**, **1/4 círculo a la derecha**, **1/4 círculo a la izquierda** (con la rapidez `v` del campo de arriba).
+* **Línea recta**, **1/4 círculo a la derecha**, **1/4 círculo a la izquierda**. Usan los campos de arriba: **Rapidez v**, **Distancia recta** (1 m por defecto) y **Radio del arco** (1 m por defecto); se pueden cambiar antes de pulsar el botón.
 * **Comando manual**: cualquier `v`, `w`, `t` (para calibrar).
 * **DETENER**: frena de inmediato.
 

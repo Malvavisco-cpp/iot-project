@@ -2,9 +2,9 @@
 
 Ejecutar desde la carpeta del taller:   python -m flet_ui.main
 
-    - Avanzar en línea recta 1 m
-    - 1/4 de círculo de 1 m de radio a la derecha
-    - 1/4 de círculo de 1 m de radio a la izquierda
+    - Avanzar en línea recta (distancia editable, 1 m por defecto)
+    - 1/4 de círculo a la derecha (radio editable, 1 m por defecto)
+    - 1/4 de círculo a la izquierda (radio editable, 1 m por defecto)
     - Comando manual (v, w, t), útil para calibrar
     - DETENER
 """
@@ -18,8 +18,8 @@ from common import config, maneuvers, messages
 from common.kinematics import inverse
 from flet_ui.mqtt_client import MqttClient
 
-DISTANCE_M = 1.0
-RADIUS_M = 1.0
+DEFAULT_DISTANCE_M = 1.0
+DEFAULT_RADIUS_M = 1.0
 
 
 def _pill(text, color):
@@ -65,21 +65,23 @@ class CarView:
         self.car_pill = _pill("Carro: sin datos", ft.Colors.BLUE_GREY_700)
 
         self.speed_field = ft.TextField(label="Rapidez v (m/s)", value=str(config.DEFAULT_SPEED_M_S), width=180)
+        self.distance_field = ft.TextField(label="Distancia recta (m)", value=str(DEFAULT_DISTANCE_M), width=180)
+        self.radius_field = ft.TextField(label="Radio del arco (m)", value=str(DEFAULT_RADIUS_M), width=180)
 
         straight_btn = ft.Button(
-            content=f"Línea recta {DISTANCE_M:g} m",
+            content="Línea recta",
             icon=ft.Icons.ARROW_UPWARD,
-            on_click=lambda e: self._maneuver(lambda v: maneuvers.straight(DISTANCE_M, v)),
+            on_click=lambda e: self._maneuver(lambda v: maneuvers.straight(float(self.distance_field.value), v)),
         )
         right_btn = ft.Button(
-            content=f"1/4 círculo R={RADIUS_M:g} m a la derecha",
+            content="1/4 círculo a la derecha",
             icon=ft.Icons.TURN_RIGHT,
-            on_click=lambda e: self._maneuver(lambda v: maneuvers.quarter_circle(RADIUS_M, v, maneuvers.RIGHT)),
+            on_click=lambda e: self._maneuver(lambda v: maneuvers.quarter_circle(float(self.radius_field.value), v, maneuvers.RIGHT)),
         )
         left_btn = ft.Button(
-            content=f"1/4 círculo R={RADIUS_M:g} m a la izquierda",
+            content="1/4 círculo a la izquierda",
             icon=ft.Icons.TURN_LEFT,
-            on_click=lambda e: self._maneuver(lambda v: maneuvers.quarter_circle(RADIUS_M, v, maneuvers.LEFT)),
+            on_click=lambda e: self._maneuver(lambda v: maneuvers.quarter_circle(float(self.radius_field.value), v, maneuvers.LEFT)),
         )
 
         self.v_field = ft.TextField(label="v (m/s)", value="0.2", width=120)
@@ -104,7 +106,7 @@ class CarView:
                 wrap=True,
                 spacing=12,
             ),
-            _card("Maniobras", [self.speed_field, ft.Row([straight_btn, right_btn, left_btn], wrap=True, spacing=12)]),
+            _card("Maniobras", [ft.Row([self.speed_field, self.distance_field, self.radius_field], wrap=True, spacing=12), ft.Row([straight_btn, right_btn, left_btn], wrap=True, spacing=12)]),
             _card("Comando manual", [ft.Row([self.v_field, self.w_field, self.t_field, manual_btn], wrap=True, spacing=12)]),
             stop_btn,
             _card("Último comando", [self.last_text]),
@@ -128,7 +130,7 @@ class CarView:
         try:
             cmd = build(float(self.speed_field.value))
         except ValueError as e:
-            self._error(f"Revise la rapidez: {e}")
+            self._error(f"Revise rapidez, distancia y radio: {e}")
             return
         self._send_cmd(cmd)
 
