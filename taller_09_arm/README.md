@@ -15,7 +15,7 @@ Watchdog. Lo nuevo es la cinemática del MeArm y cómo se traducen los ángulos 
 
 ```text
   Flet ─┬─► motion/state    ─► Carrobot ─► MotionPlayer ─┬─► DiffDrive ─► 2 motores (L298N mini)
-        └─► motion/sequence ─►          ─► Choreographer └─► MeArm    ─► servos base / hombro / codo
+        └─► motion/sequence ─►          ─► Choreographer └─► MeArm    ─► servos hombro / codo
             (el gemelo virtual recibe exactamente los mismos mensajes)
 ```
 
@@ -113,14 +113,15 @@ Pines en [`micropython/config.py`](micropython/config.py). Son números **GPIO**
 |---|---|---|
 | `GP2`, `GP3` | IN1, IN2 del L298N mini | motor izquierdo |
 | `GP6`, `GP7` | IN3, IN4 del L298N mini | motor derecho |
-| `GP10` | señal del servo de la **base** del MeArm (alpha0) | |
-| `GP11` | señal del servo del **hombro** (alpha1 = q1) | |
-| `GP12` | señal del servo del **codo** (q2, mueve el antebrazo) | |
+| `GP11` | señal del servo del **hombro** (alpha1 = q1) | sube y baja todo el brazo |
+| `GP12` | señal del servo del **codo** (q2) | por una varilla extiende y recoge el antebrazo (está en la base) |
 | `GP4` (SDA), `GP5` (SCL) | OLED SSD1306 128x64 I2C | VCC → 3V3, GND → GND |
 | `GP26` (ADC0) | pata **central** del potenciómetro | las otras dos a 3V3 y GND |
 | `GND` | GND del L298N, de los servos y de las baterías | **tierra común obligatoria** |
 
-> ⚠️ **Alimentación:** los motores van con su batería al `+`/`-` del L298N mini. Los **servos van a una fuente de 5 V aparte** (3 servos moviéndose piden más de lo que da el Pico por USB; si se alimentan del Pico, se reinicia en plena coreografía). Todas las tierras unidas.
+> ℹ️ **Dos servos, sin base giratoria.** Este robot tiene solo dos servos, los dos en la base: el del **hombro** (`alpha1`) sube y baja todo el brazo, y el del **codo** (`alpha2`) extiende y recoge el antebrazo con una varilla. `SERVO_ALPHA0_GPIO = None` en `micropython/config.py`: `alpha0_deg` se acepta en los mensajes (el gemelo sí lo usa) pero no mueve nada. Si algún día agregan un servo de giro, pongan su GPIO ahí.
+>
+> ⚠️ **Alimentación:** los motores van con su batería al `+`/`-` del L298N mini. Los **servos van a una fuente de 5 V aparte** (los servos moviéndose piden más de lo que da el Pico por USB; si se alimentan del Pico, se reinicia en plena coreografía). Todas las tierras unidas.
 >
 > ⚠️ **PWM:** dos pines que comparten *slice* comparten frecuencia, y los motores van a 1000 Hz y los servos a 50 Hz. Slice = `(GPIO // 2) % 8`: GP2/3 = 1, GP6/7 = 3, GP10/11 = 5, GP12 = 6 → no chocan. Si cambian pines, revisen que un servo no quede en el mismo slice que un motor (p. ej. **GP18/19 comparten slice con GP2/3**).
 

@@ -56,7 +56,8 @@ class MeArm:
         self.limited = limited
 
         q2 = real_alpha2 - 180.0
-        self.base.set_angle(alpha0)
+        if self.base is not None:  # sin servo de base (SERVO_ALPHA0_GPIO = None) se ignora alpha0
+            self.base.set_angle(alpha0)
         self.shoulder.set_angle(alpha1 - self.shoulder_center_deg)
         self.elbow.set_angle(wrap_deg(q2 - self.crank_center_deg))
         self.angles = (alpha0, alpha1, alpha2)

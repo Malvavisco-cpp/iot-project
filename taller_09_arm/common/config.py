@@ -13,7 +13,7 @@ PREFIX = "UDFJC/iot_ws/robot4/"
 WHEEL_HALF_TRACK_M = 0.065     # d: mitad de la distancia entre los centros de las ruedas
 MAX_WHEEL_SPEED_M_S = 0.5      # rapidez de una rueda con el PWM al 100 %
 
-# --- Brazo MeArm: 3 servos (base, hombro, codo) ---------------------------------
+# --- Brazo: 2 servos (hombro y codo); alpha0 se ignora -----------------------
 # Pulsos típicos de un SG90 / MG90S: 0.5 ms = -90°, 1.5 ms = centro, 2.5 ms = +90°.
 SERVO_FREQ_HZ = 50
 SERVO_MIN_PULSE_MS = 0.5

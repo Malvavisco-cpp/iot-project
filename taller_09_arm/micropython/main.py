@@ -2,7 +2,7 @@
 
 Se guarda como main.py en la raíz del Pico: arranca solo al energizar.
 
-    motion/state    -> MotionPlayer (inmediato)  -> DiffDrive (2 motores) + MeArm (3 servos)
+    motion/state    -> MotionPlayer (inmediato)  -> DiffDrive (2 motores) + MeArm (2 servos: hombro y codo)
     motion/sequence -> Choreographer (create / delete / schedule a la hora UTC)
     NTP             -> WallClock (hora real en ms, para arrancar junto al gemelo)
     WatchdogTask    -> watchdog/stats por MQTT + OLED (scroll con el potenciómetro)
@@ -114,7 +114,7 @@ def main():
         config.ARC_W_GAIN_RIGHT,
     )
     arm = MeArm(
-        make_servo(config.SERVO_ALPHA0_GPIO, "alpha0"),
+        make_servo(config.SERVO_ALPHA0_GPIO, "alpha0") if config.SERVO_ALPHA0_GPIO is not None else None,
         make_servo(config.SERVO_ALPHA1_GPIO, "alpha1"),
         make_servo(config.SERVO_ALPHA2_GPIO, "alpha2"),
         shoulder_center_deg=config.MEARM_SHOULDER_CENTER_DEG,

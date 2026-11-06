@@ -57,11 +57,13 @@ MOTOR_MIN_DUTY = 0.5
 LEFT_GAIN = 1.0
 RIGHT_GAIN = 1.0
 
-# --- Brazo MeArm: 3 servos a 50 Hz ------------------------------------------------
+# --- Brazo: 2 servos a 50 Hz (hombro y codo; sin servo de base) -----------------
 # OJO: dos pines que compartan "slice" PWM comparten frecuencia. Los motores
 # van a 1000 Hz y los servos a 50 Hz, así que NO pueden compartir slice.
 # slice = (GPIO // 2) % 8   ->  GP2/3=1, GP6/7=3, GP10/11=5, GP12=6. Bien.
-SERVO_ALPHA0_GPIO = 10         # base
+# Base (alpha0): el robot no tiene servo de giro, así que no se usa. Con un número
+# de GPIO aquí se crearía ese servo y alpha0 lo movería.
+SERVO_ALPHA0_GPIO = None
 SERVO_ALPHA1_GPIO = 11         # hombro (q1)
 SERVO_ALPHA2_GPIO = 12         # codo (q2, mueve el antebrazo)
 
