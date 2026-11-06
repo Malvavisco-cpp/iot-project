@@ -49,16 +49,18 @@ def make_pwm(gpio, freq):
     return pwm
 
 
-def make_motor(pwm_gpio, in1_gpio, in2_gpio, inverted):
+def make_motor(pwm_gpio, in1_gpio, in2_gpio, inverted, gain):
     f = config.MOTOR_PWM_FREQ_HZ
     if config.MOTOR_DRIVER == "mini":
-        return MiniMotor(make_pwm(in1_gpio, f), make_pwm(in2_gpio, f), config.MAX_WHEEL_SPEED_M_S, inverted)
+        return MiniMotor(make_pwm(in1_gpio, f), make_pwm(in2_gpio, f), config.MAX_WHEEL_SPEED_M_S, inverted, config.MOTOR_MIN_DUTY, gain)
     return Motor(
         make_pwm(pwm_gpio, f),
         Pin(in1_gpio, Pin.OUT, value=0),
         Pin(in2_gpio, Pin.OUT, value=0),
         config.MAX_WHEEL_SPEED_M_S,
         inverted,
+        config.MOTOR_MIN_DUTY,
+        gain,
     )
 
 
@@ -103,8 +105,8 @@ def main():
         Pin(config.STBY_GPIO, Pin.OUT, value=1)
 
     drive = DiffDrive(
-        make_motor(config.LEFT_PWM_GPIO, config.LEFT_IN1_GPIO, config.LEFT_IN2_GPIO, config.LEFT_INVERTED),
-        make_motor(config.RIGHT_PWM_GPIO, config.RIGHT_IN1_GPIO, config.RIGHT_IN2_GPIO, config.RIGHT_INVERTED),
+        make_motor(config.LEFT_PWM_GPIO, config.LEFT_IN1_GPIO, config.LEFT_IN2_GPIO, config.LEFT_INVERTED, config.LEFT_GAIN),
+        make_motor(config.RIGHT_PWM_GPIO, config.RIGHT_IN1_GPIO, config.RIGHT_IN2_GPIO, config.RIGHT_INVERTED, config.RIGHT_GAIN),
         config.WHEEL_HALF_TRACK_M,
         config.MAX_WHEEL_SPEED_M_S,
     )

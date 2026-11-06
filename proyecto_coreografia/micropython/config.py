@@ -41,6 +41,15 @@ LEFT_INVERTED = False
 RIGHT_INVERTED = False
 MOTOR_PWM_FREQ_HZ = 1000
 
+# Fracción del PWM (0-1) con la que el motor apenas arranca. A PWM bajo el motor
+# zumba pero no gira (zona muerta). Súbalo si no arranca; bájelo si arranca "de golpe".
+MOTOR_MIN_DUTY = 0.5
+
+# Factor del PWM de cada rueda para ir recto (0.98 = 2 % menos PWM en esa rueda).
+# Con las dos en 1.0 no se corrige nada; bájela en la rueda que resulte más rápida.
+LEFT_GAIN = 1.0
+RIGHT_GAIN = 1.0
+
 # --- Brazo: 3 servos a 50 Hz ------------------------------------------------
 # OJO: dos pines que compartan "slice" PWM comparten frecuencia. Los motores
 # van a 1000 Hz y los servos a 50 Hz, así que NO pueden compartir slice.
