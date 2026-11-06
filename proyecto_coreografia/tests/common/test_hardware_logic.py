@@ -100,3 +100,30 @@ def test_drive_stop():
     d.drive(0.2, 0)
     d.stop()
     assert left.speed == right.speed == 0.0
+
+
+def test_drive_calibration_matches_the_measured_values_at_v_04():
+    # v = 0.4: recta w = 0.6, izquierda w = 0.4 * 5.4375 = 2.175, derecha w = -0.4 * 4.75 = -1.9
+    for w, expected in ((0.0, 0.6), (0.4, 2.175), (-0.4, -1.9)):
+        left, right = FakeMotor(), FakeMotor()
+        d = DiffDrive(left, right, 0.065, 5.0, straight_w_trim=0.6, arc_w_gain_left=5.4375, arc_w_gain_right=4.75)
+        d.drive(0.4, w)
+        assert (right.speed - left.speed) / (2 * 0.065) == pytest.approx(expected)
+
+
+def test_drive_calibration_leaves_spins_and_defaults_alone():
+    left, right = FakeMotor(), FakeMotor()
+    d = DiffDrive(left, right, 0.065, 5.0, straight_w_trim=0.6, arc_w_gain_left=5.4375, arc_w_gain_right=4.75)
+    d.drive(0.0, 1.0)  # giro en el sitio
+    assert (right.speed - left.speed) / (2 * 0.065) == pytest.approx(1.0)
+
+    left, right = FakeMotor(), FakeMotor()
+    DiffDrive(left, right, 0.065, 5.0).drive(0.4, 0.0)  # sin calibración: recto de verdad
+    assert left.speed == right.speed == pytest.approx(0.4)
+
+
+def test_drive_reports_the_requested_v_w_not_the_corrected_ones():
+    left, right = FakeMotor(), FakeMotor()
+    d = DiffDrive(left, right, 0.065, 5.0, straight_w_trim=0.6)
+    d.drive(0.4, 0.0)
+    assert (d.v, d.w) == (0.4, 0.0)
