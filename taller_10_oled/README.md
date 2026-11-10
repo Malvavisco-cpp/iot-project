@@ -103,7 +103,7 @@ Pines en [`micropython/config.py`](micropython/config.py). Son números **GPIO**
 | `GP4` | `SDA` | datos I²C (bus I²C0) |
 | `GP5` | `SCL` | reloj I²C (bus I²C0) |
 
-> ⚠️ Las resistencias *pull-up* de SDA y SCL ya vienen en el módulo OLED (y en la Pico); no hace falta agregarlas. Verifiquen las etiquetas de su módulo: algunos tienen el orden `GND VCC SCL SDA` y otros `VCC GND SCL SDA`. **No** conecten señales de 5 V a los GPIO de la Pico.
+> ⚠️ Las resistencias *pull-up* de SDA y SCL las trae el módulo OLED, **no** la Pico; casi todos los módulos las incluyen, pero si el escaneo sale vacío con todo bien cableado, agreguen 4.7 kΩ de SDA a 3V3 y de SCL a 3V3. Verifiquen las etiquetas de su módulo: algunos tienen el orden `GND VCC SCL SDA` y otros `VCC GND SCL SDA`. **No** conecten señales de 5 V a los GPIO de la Pico.
 >
 > Si usan otros pines, tienen que ser del mismo bus: `GP4/GP5` son I²C0 (`OLED_I2C_ID = 0`); `GP26/GP27` (como en el ejemplo del enunciado) son I²C1 (`OLED_I2C_ID = 1`).
 
@@ -215,9 +215,9 @@ La OLED no publica nada: la pantalla es de salida.
 |---|---|
 | `No module named 'machine'` | Thonny en "Local Python 3" o placa con CircuitPython → paso 0 |
 | `ImportError: no module named 'node'` / `'umqtt'` / `'common'` / `'ssd1306'` | Falta subir ese archivo o carpeta → paso 3 y comparen con el árbol |
-| `OLED: no aparece en 0x3c (scan: [])` | SDA/SCL invertidos, sin VCC/GND, o pines de otro bus I²C (`OLED_I2C_ID`) |
+| `OLED: no aparece en 0x3c (scan: [])` | SDA/SCL invertidos, sin VCC/GND, o pines de otro bus I²C (`OLED_I2C_ID`). **Cambien los jumpers**: un cable dupont malo (que no conduce) dio exactamente este síntoma en las pruebas. `oled_test.py` dice si una línea está pegada a 0 V |
 | `OLED: no aparece en 0x3c (scan: ['0x3d'])` | Su módulo usa `0x3D`: cambien `OLED_I2C_ADDR` |
-| `OSError: [Errno 5] EIO` al iniciar | Cableado flojo o dirección incorrecta |
+| `OSError: [Errno 5] EIO` al iniciar | Cableado flojo (jumper sin buen contacto) o dirección incorrecta: el módulo se ve en el scan pero no contesta al escribir |
 | `WiFi: reintentando, status = -2` | No encuentra la red: `WIFI_SSID` mal escrito o red de 5 GHz |
 | `WiFi: reintentando, status = -3` | Contraseña mal en `.env` |
 | La pantalla no cambia al enviar desde Flet | `PREFIX` distinto entre el PC y el Pico, o el Pico sin WiFi/MQTT |
