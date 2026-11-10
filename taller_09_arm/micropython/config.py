@@ -71,6 +71,9 @@ SERVO_ALPHA2_GPIO = 12         # codo (q2, mueve el antebrazo)
 OLED_SDA_GPIO = 4
 OLED_SCL_GPIO = 5
 OLED_I2C_ADDR = 0x3C
+# Controlador de la pantalla: "ssd1306" (típica de 0.96") o "sh1106" (típica de 1.3").
+# Si la pantalla se enciende pero queda en negro o con basura, pruebe el otro.
+OLED_CONTROLLER = "sh1106"
 POT_GPIO = 26                  # ADC0: pata central del potenciómetro
 
 # --- Tiempos --------------------------------------------------------------

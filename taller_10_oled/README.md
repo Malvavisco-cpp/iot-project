@@ -66,7 +66,8 @@ taller_10_oled/
 ├── micropython/             # -> se sube a la RAÍZ del Pico
 │   ├── main.py              #   punto de entrada (arranca solo)
 │   ├── config.py            #   pines I²C, dirección de la OLED y WiFi
-│   ├── ssd1306.py           #   driver de la pantalla (micropython-lib)
+│   ├── ssd1306.py           #   driver de la pantalla SSD1306 (micropython-lib)
+│   ├── sh1106.py            #   driver para pantallas SH1106 (1.3"); se elige con OLED_CONTROLLER
 │   ├── oled_test.py         #   prueba de conexión: se corre con F5 desde Thonny
 │   ├── mqtt.py, wifi.py, safe_scheduler.py      # infraestructura (de los talleres 05/07/08)
 │   ├── node.py, task.py, scheduler.py,
@@ -217,6 +218,7 @@ La OLED no publica nada: la pantalla es de salida.
 | `ImportError: no module named 'node'` / `'umqtt'` / `'common'` / `'ssd1306'` | Falta subir ese archivo o carpeta → paso 3 y comparen con el árbol |
 | `OLED: no aparece en 0x3c (scan: [])` | SDA/SCL invertidos, sin VCC/GND, o pines de otro bus I²C (`OLED_I2C_ID`). **Cambien los jumpers**: un cable dupont malo (que no conduce) dio exactamente este síntoma en las pruebas. `oled_test.py` dice si una línea está pegada a 0 V |
 | `OLED: no aparece en 0x3c (scan: ['0x3d'])` | Su módulo usa `0x3D`: cambien `OLED_I2C_ADDR` |
+| La pantalla se enciende (o parpadea) pero queda en negro o con basura, y el scan sí da `0x3c` | Su módulo es un **SH1106** (típico de 1.3"), no un SSD1306: pongan `OLED_CONTROLLER = "sh1106"` en `micropython/config.py` (y suban `sh1106.py`). Con el `oled_test.py`, cambien `CONTROLLER` al inicio del archivo |
 | `OSError: [Errno 5] EIO` al iniciar | Cableado flojo (jumper sin buen contacto) o dirección incorrecta: el módulo se ve en el scan pero no contesta al escribir |
 | `WiFi: reintentando, status = -2` | No encuentra la red: `WIFI_SSID` mal escrito o red de 5 GHz |
 | `WiFi: reintentando, status = -3` | Contraseña mal en `.env` |

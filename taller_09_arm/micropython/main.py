@@ -80,13 +80,16 @@ def make_servo(gpio, joint):
 def make_oled():
     """El robot funciona igual sin OLED: si no responde, se sigue sin pantalla."""
     try:
-        from ssd1306 import SSD1306_I2C
+        if config.OLED_CONTROLLER == "sh1106":
+            from sh1106 import SH1106_I2C as Driver
+        else:
+            from ssd1306 import SSD1306_I2C as Driver
 
         i2c = I2C(0, sda=Pin(config.OLED_SDA_GPIO), scl=Pin(config.OLED_SCL_GPIO), freq=400000)
         if config.OLED_I2C_ADDR not in i2c.scan():
             print("OLED: no aparece en el I2C (scan:", [hex(a) for a in i2c.scan()], ") -> sin pantalla")
             return None
-        oled = SSD1306_I2C(128, 64, i2c, addr=config.OLED_I2C_ADDR)
+        oled = Driver(128, 64, i2c, addr=config.OLED_I2C_ADDR)
         oled.text("Coreografia", 0, 0, 1)
         oled.text("arrancando...", 0, 16, 1)
         oled.show()

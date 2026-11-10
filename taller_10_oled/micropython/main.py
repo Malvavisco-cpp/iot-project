@@ -11,7 +11,6 @@ from machine import I2C, Pin
 
 import config
 from common.oled import OLED
-from ssd1306 import SSD1306_I2C
 
 from mqtt import MQTTTransport
 from node import Node
@@ -42,7 +41,11 @@ def make_display():
             "OLED: no aparece en 0x%02x (scan: %s). Revise SDA/SCL, VCC/GND y OLED_I2C_ADDR."
             % (config.OLED_I2C_ADDR, [hex(a) for a in found])
         )
-    return SSD1306_I2C(config.OLED_WIDTH, config.OLED_HEIGHT, i2c, addr=config.OLED_I2C_ADDR)
+    if config.OLED_CONTROLLER == "sh1106":
+        from sh1106 import SH1106_I2C as Driver
+    else:
+        from ssd1306 import SSD1306_I2C as Driver
+    return Driver(config.OLED_WIDTH, config.OLED_HEIGHT, i2c, addr=config.OLED_I2C_ADDR)
 
 
 def main():

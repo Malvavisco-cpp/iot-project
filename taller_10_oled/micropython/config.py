@@ -23,3 +23,6 @@ OLED_SDA_GPIO = 4
 OLED_SCL_GPIO = 5
 OLED_I2C_ADDR = 0x3C           # 0x3D en algunos módulos: lo dice el scan de la Shell
 OLED_I2C_FREQ_HZ = 400000
+# Controlador de la pantalla: "ssd1306" (típica de 0.96") o "sh1106" (típica de 1.3").
+# Si la pantalla se enciende pero queda en negro o con basura, pruebe el otro.
+OLED_CONTROLLER = "sh1106"

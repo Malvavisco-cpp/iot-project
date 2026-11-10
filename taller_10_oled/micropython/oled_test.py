@@ -1,6 +1,6 @@
 """Prueba de conexión de la OLED. Se corre desde Thonny (F5), NO se llama main.py.
 
-Necesita en el Pico solo este archivo y ssd1306.py. No usa WiFi ni MQTT.
+Necesita en el Pico solo este archivo y el driver (ssd1306.py o sh1106.py, según CONTROLLER). No usa WiFi ni MQTT.
 
     1. Escanea el bus I2C de los pines configurados y dice qué direcciones responden.
     2. Si no aparece nada, lee el nivel de SDA y SCL (una línea pegada a 0 V indica
@@ -23,6 +23,7 @@ ADDR = 0x3C            # 0x3D en algunos módulos
 WIDTH = 128
 HEIGHT = 64            # 32 en las pantallas pequeñas
 FREQ = 400000
+CONTROLLER = "sh1106"   # "ssd1306" (0.96") o "sh1106" (1.3"): si queda en negro o con basura, pruebe el otro
 
 # Pares (bus, SDA, SCL) válidos en la Pico: el bus lo decide el GPIO de SDA.
 ALL_PAIRS = [
@@ -126,12 +127,15 @@ def main():
         return
 
     try:
-        from ssd1306 import SSD1306_I2C
+        if CONTROLLER == "sh1106":
+            from sh1106 import SH1106_I2C as Driver
+        else:
+            from ssd1306 import SSD1306_I2C as Driver
     except ImportError:
-        print("\nFalta ssd1306.py en el Pico: súbalo (taller_10_oled/micropython/ssd1306.py).")
+        print("\nFalta %s.py en el Pico: súbalo (taller_10_oled/micropython/)." % CONTROLLER)
         return
 
-    display = SSD1306_I2C(WIDTH, HEIGHT, i2c, addr=ADDR)
+    display = Driver(WIDTH, HEIGHT, i2c, addr=ADDR)
     demo(display)
     print("\nOK: la OLED responde y dibuja. Ya puede subir el resto del taller.")
 
