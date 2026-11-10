@@ -24,6 +24,7 @@ WIDTH = 128
 HEIGHT = 64            # 32 en las pantallas pequeñas
 FREQ = 400000
 CONTROLLER = "sh1106"   # "ssd1306" (0.96") o "sh1106" (1.3"): si queda en negro o con basura, pruebe el otro
+CLEAR_AT_END = True    # True: deja la pantalla en blanco al terminar; False: deja "Todo bien :)"
 
 # Pares (bus, SDA, SCL) válidos en la Pico: el bus lo decide el GPIO de SDA.
 ALL_PAIRS = [
@@ -103,6 +104,10 @@ def demo(display):
     display.fill(0)
     display.text("Todo bien :)", 16, HEIGHT // 2 - 4, 1)
     display.show()
+    if CLEAR_AT_END:
+        time.sleep(2)
+        display.fill(0)
+        display.show()
 
 
 def main():
