@@ -244,6 +244,10 @@ Los motores baratos no responden lineal al PWM, así que el carro real necesita 
 
 Los valores por defecto salen de medir en el carro real con `v = 0.4 m/s`, `t = 3.9 s` y las dos ganancias de rueda en `1.0`: hizo lo pedido con `w = +0.6` (recta), `+2.175` (izquierda) y `-1.9` (derecha), cuando el teórico de un 1/4 de círculo R = 1 m a esa rapidez es `±0.4`. De ahí `STRAIGHT_W_TRIM = 0.6`, `ARC_W_GAIN_LEFT = 5.4375` y `ARC_W_GAIN_RIGHT = 4.75`. Es una calibración puntual: con otra rapidez, otro radio o otro montaje, vuelvan a medirla. Para desactivarla, pongan `0`, `1` y `1`. Los cambios en `common/config.py` hay que volver a subirlos al Pico.
 
+### Diagnóstico rápido de los servos
+
+Antes de usar el brazo completo, `micropython/servo_test.py` mueve cada servo por separado (GP11 y GP12, ±30° alrededor del centro) e imprime lo que hace. Suban solo ese archivo al Pico, ábranlo en Thonny y pulsen **F5**. No usa WiFi ni `common/`. Los pines y el rango se ajustan al inicio del archivo (`SERVOS`, `RANGE_DEG`).
+
 ### 7. El gemelo virtual
 
 Los dos gemelos reciben los mismos mensajes que el robot; solo hay que apuntarlos al mismo broker y prefijo.
