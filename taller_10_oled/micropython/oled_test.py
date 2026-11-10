@@ -3,7 +3,8 @@
 Necesita en el Pico solo este archivo y ssd1306.py. No usa WiFi ni MQTT.
 
     1. Escanea el bus I2C de los pines configurados y dice qué direcciones responden.
-    2. Si no aparece nada, prueba todos los pares SDA/SCL válidos del Pico y le dice
+    2. Si no aparece nada, lee el nivel de SDA y SCL (una línea pegada a 0 V indica
+       un problema de alimentación o de cableado) y prueba todos los pares SDA/SCL válidos del Pico y le dice
        en cuáles encontró algo (sirve para detectar cables cambiados o en otros pines).
     3. Si encuentra la pantalla, dibuja texto, un marco y una animación corta.
 
@@ -37,6 +38,29 @@ def scan(bus, sda, scl):
     except Exception as e:
         print("  (no se pudo abrir I2C%d GP%d/GP%d: %s)" % (bus, sda, scl, e))
         return None, []
+
+
+def check_lines(sda, scl):
+    """Nivel en reposo de SDA y SCL con pull-up interno: deben leer 1.
+
+    Una línea que lee 0 está pegada a tierra: módulo sin alimentación, cable
+    tocando GND, VCC/GND cambiados o módulo dañado.
+    """
+    print("Nivel en reposo (debe ser 1):")
+    stuck = []
+    for name, gpio in (("SDA", sda), ("SCL", scl)):
+        level = Pin(gpio, Pin.IN, Pin.PULL_UP).value()
+        print("  %s (GP%d) = %d" % (name, gpio, level))
+        if level == 0:
+            stuck.append("%s (GP%d)" % (name, gpio))
+    if stuck:
+        print("  Pegada a 0 V: %s" % ", ".join(stuck))
+        print("  -> Desconecte ese cable y repita: si pasa a 1, la jala la OLED o el cable")
+        print("     (¿VCC sin llegar a 3V3? ¿VCC/GND cambiados? ¿cable tocando GND?).")
+    else:
+        print("  Las dos líneas están en alto: el cableado de datos parece bien; revise")
+        print("  que VCC llegue a 3V3(OUT) (pata 36) y si el módulo trae pull-ups.")
+    return stuck
 
 
 def find_anywhere():
@@ -89,6 +113,7 @@ def main():
 
     if not addrs:
         print("\nNo respondió nada en esos pines.")
+        check_lines(SDA_GPIO, SCL_GPIO)
         found = find_anywhere()
         if found:
             print("\nLa pantalla está en otros pines: cambie I2C_ID / SDA_GPIO / SCL_GPIO arriba (o recablee).")
