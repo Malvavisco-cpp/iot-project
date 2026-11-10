@@ -67,6 +67,7 @@ taller_10_oled/
 │   ├── main.py              #   punto de entrada (arranca solo)
 │   ├── config.py            #   pines I²C, dirección de la OLED y WiFi
 │   ├── ssd1306.py           #   driver de la pantalla (micropython-lib)
+│   ├── oled_test.py         #   prueba de conexión: se corre con F5 desde Thonny
 │   ├── mqtt.py, wifi.py, safe_scheduler.py      # infraestructura (de los talleres 05/07/08)
 │   ├── node.py, task.py, scheduler.py,
 │   │   util.py, ring_buffer.py, umqtt/simple.py # base de PicoROS (minimum_PicoROS.zip)
@@ -132,7 +133,7 @@ Al final, el Pico debe tener exactamente esto:
 ```text
 /
 ├── .env
-├── main.py  config.py  ssd1306.py
+├── main.py  config.py  ssd1306.py  (oled_test.py es solo para la prueba)
 ├── mqtt.py  wifi.py  safe_scheduler.py
 ├── node.py  task.py  scheduler.py  util.py  ring_buffer.py
 ├── umqtt/simple.py
@@ -155,6 +156,16 @@ La pantalla muestra primero **OLED lista / conectando...** y, al conectarse al b
 El `I2C scan` es la comprobación del taller: la lista tiene que traer la dirección de su pantalla. Si sale `[]`, el programa se detiene con `OLED: no aparece en 0x3c` (ver "Si algo no funciona").
 
 Desde ahí el Pico ya no necesita Thonny: puede alimentarse con batería y arranca solo.
+
+### Probar solo la conexión de la OLED (opcional, antes del paso 3)
+
+Para saber si la pantalla está bien conectada sin subir todo el taller: suban únicamente `micropython/ssd1306.py` y `micropython/oled_test.py` al Pico (**Ver > Archivos**, clic derecho → **"Subir a /"**), abran `oled_test.py` en Thonny y pulsen **F5** (con el intérprete en *MicroPython (Raspberry Pi Pico)*). No usa WiFi ni MQTT:
+
+1. Escanea el I²C en los pines de la configuración e imprime las direcciones que responden (`Scan: ['0x3c']`).
+2. Si no responde nada, prueba todos los pares SDA/SCL válidos de la Pico y dice en cuál encontró la pantalla.
+3. Si la encuentra, dibuja texto, un marco, cambia el contraste, invierte la pantalla y mueve un cuadrito. Termina con `OK: la OLED responde y dibuja`.
+
+Si la dirección es `0x3d`, pongan `ADDR = 0x3D` al inicio del archivo.
 
 ### 5. Correr la app Flet en el PC
 
