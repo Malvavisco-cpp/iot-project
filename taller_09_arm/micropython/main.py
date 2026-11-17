@@ -134,6 +134,9 @@ def main():
         crank_center_deg=config.MEARM_CRANK_CENTER_DEG,
         min_rel_deg=config.MEARM_MIN_REL_DEG,
         max_rel_deg=config.MEARM_MAX_REL_DEG,
+        # Pose inicial = servos centrados (0 y 0), la misma con la que termina servo_inicio.
+        # Con (0, 0, 0) el hombro se iba a -90 al crear el brazo.
+        initial=(0.0, config.MEARM_SHOULDER_CENTER_DEG, 0.0),
     )
 
     scheduler = SafeScheduler()
