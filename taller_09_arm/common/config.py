@@ -37,8 +37,8 @@ MEARM_MAX_REL_DEG = -20.0
 #               codo van montados en espejo, así que uno suele quedar invertido)
 ARM_JOINTS = {
     "alpha0": {"offset_deg": 0.0, "inverted": False},  # base
-    "alpha1": {"offset_deg": 0.0, "inverted": False},  # hombro (q1)
-    "alpha2": {"offset_deg": 0.0, "inverted": False},  # codo (q2)
+    "alpha1": {"offset_deg": 0.0, "inverted": True},   # hombro (q1): comprobado en el robot, gira al revés
+    "alpha2": {"offset_deg": 0.0, "inverted": True},   # codo (q2): comprobado en el robot, gira al revés
 }
 
 # --- App ------------------------------------------------------------------------
