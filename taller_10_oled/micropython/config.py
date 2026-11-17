@@ -26,3 +26,11 @@ OLED_I2C_FREQ_HZ = 400000
 # Controlador de la pantalla: "ssd1306" (típica de 0.96") o "sh1106" (típica de 1.3").
 # Si la pantalla se enciende pero queda en negro o con basura, pruebe el otro.
 OLED_CONTROLLER = "sh1106"
+
+# --- Servos del brazo (misma pasada de arranque que pruebas_hardware/prueba_servos.py) ---
+SERVOS = {"hombro": 11, "codo": 12}   # GPIO de cada servo
+SERVO_FREQ_HZ = 50
+SERVO_MIN_MS = 0.5                    # 0.5 ms = -90 grados
+SERVO_MAX_MS = 2.5                    # 2.5 ms = +90 grados; 1.5 ms = centro
+SERVO_BARRIDO_DEG = 25                # barrido de cada servo al arrancar
+SERVO_AL_ARRANCAR = True              # False = main.py no mueve los servos

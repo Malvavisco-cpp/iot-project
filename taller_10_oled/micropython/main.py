@@ -18,6 +18,17 @@ from safe_scheduler import SafeScheduler
 from wifi import WiFiLink
 
 
+def arranque_servos():
+    if not config.SERVO_AL_ARRANCAR:
+        return
+    try:
+        import servo_inicio
+
+        servo_inicio.rutina()
+    except Exception as e:  # un servo mal conectado no debe impedir que arranque la pantalla
+        print("Servos: no se pudo hacer la pasada inicial:", e)
+
+
 def read_wifi_password():
     try:
         with open(config.WIFI_PASSWORD_FILE) as f:
@@ -52,6 +63,7 @@ def main():
     board_id = ubinascii.hexlify(machine.unique_id()).decode()
     client_id = config.NODE_NAME + "_" + board_id
 
+    arranque_servos()
     display = make_display()
 
     scheduler = SafeScheduler()
