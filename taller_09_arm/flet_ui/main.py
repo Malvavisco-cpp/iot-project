@@ -52,7 +52,9 @@ class StateFields:
         self.v = _field("v (dm/s)", 0)
         self.w = _field("w (°/s)", 0)
         self.a0 = _field("alpha0 (°)", 0)
-        self.a1 = _field("alpha1 (°)", 0)
+        # Pose "casa" = servos centrados (la misma con la que arranca el robot). Con alpha1 = 0 el
+        # hombro se iría a -90° en cada comando de avance, porque el estado siempre lleva los ángulos.
+        self.a1 = _field("alpha1 (°)", config.MEARM_SHOULDER_CENTER_DEG)
         self.a2 = _field("alpha2 (°)", 0)
         self.t = _field("duración (s)", duration)
         self.controls = [self.v, self.w, self.a0, self.a1, self.a2, self.t]
