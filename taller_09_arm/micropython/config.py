@@ -77,3 +77,7 @@ POT_GPIO = 26                  # ADC0: pata central del potenciómetro
 MOTION_PERIOD_MS = 20
 WATCHDOG_PERIOD_MS = 2000
 OLED_PERIOD_MS = 150
+
+# --- Arranque de servos (misma pasada que pruebas_hardware/prueba_servos.py) ---
+SERVO_BARRIDO_DEG = 25         # barrido de cada servo al arrancar
+SERVO_AL_ARRANCAR = True       # False = main.py no mueve los servos al encender

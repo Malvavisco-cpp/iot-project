@@ -96,9 +96,22 @@ def make_oled():
         return None
 
 
+def arranque_servos():
+    """Pasada inicial como pruebas_hardware/prueba_servos.py: centra, barre y suelta."""
+    if not config.SERVO_AL_ARRANCAR:
+        return
+    try:
+        import servo_inicio
+
+        servo_inicio.rutina()
+    except Exception as e:  # un servo mal conectado no debe impedir el arranque
+        print("Servos: no se pudo hacer la pasada inicial:", e)
+
+
 def main():
     board_id = ubinascii.hexlify(machine.unique_id()).decode()
     client_id = config.NODE_NAME + "_" + board_id
+    arranque_servos()
     oled = make_oled()
 
     if config.STBY_GPIO is not None:
