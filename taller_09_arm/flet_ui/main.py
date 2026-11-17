@@ -83,6 +83,9 @@ class CoreoView:
     def __init__(self, page, send):
         self.page = page
         self._send = send
+        # Última pose del brazo que se le mandó al robot. Las maniobras y DETENER la repiten tal cual,
+        # así el brazo no se mueve cuando solo se quieren mover las ruedas.
+        self.arm_pose = (0.0, config.MEARM_SHOULDER_CENTER_DEG, 0.0)
         self.choreo = model.Choreography()
         self._build()
         self._render_steps()
@@ -212,6 +215,8 @@ class CoreoView:
 
     def _publish(self, topic, payload, note=""):
         self._send(topic, payload)
+        if topic == motion.TOPIC_STATE and "alpha1_deg" in payload:
+            self.arm_pose = (payload["alpha0_deg"], payload["alpha1_deg"], payload["alpha2_deg"])
         self.sent.value = "%s  %s\n%s" % (topic, note, json.dumps(payload))
         self.message.value = ""
         self.sent.update()
@@ -240,7 +245,7 @@ class CoreoView:
         # No hay tópico de "stop" en motionTopics.md: un estado quieto corto detiene
         # al robot Y al gemelo, y deja el brazo donde está (bloque 1).
         def go():
-            self._publish(motion.TOPIC_STATE, motion.build_state(0, 0, *self.now_fields.angles(), 0.1), "(DETENER)")
+            self._publish(motion.TOPIC_STATE, motion.build_state(0, 0, *self.arm_pose, 0.1), "(DETENER)")
         self._try(go)
 
     # ------------------------------------------------------------------ 5. MeArm
@@ -271,7 +276,7 @@ class CoreoView:
     def _maneuver(self, build):
         def go():
             v, w, t = build(model.parse_float(self.speed.value, "rapidez"))
-            state = motion.build_state(v, w, *self.now_fields.angles(), t)
+            state = motion.build_state(v, w, *self.arm_pose, t)
             self._publish(motion.TOPIC_STATE, state, "(maniobra: %.2f s)" % t)
         self._try(go)
 
