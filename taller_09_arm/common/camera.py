@@ -8,15 +8,12 @@ y el tamaño va en el nombre del tópico: quien recibe necesita saberlo para arm
 imagen. Aquí vive todo lo que no toca hardware, para probarlo en el PC.
 """
 
-import re
-import struct
-import zlib
-
 TOPIC_FRAME_PREFIX = "camera/frame/"
 TOPIC_FRAME_FILTER = "camera/frame/+"   # se escucha este: sirve para cualquier resolución
 FORMAT = "rgb565"
 
-_TOPIC_RE = re.compile(r"rgb565_(\d+)x(\d+)$")
+# `re`, `struct` y `zlib` se importan dentro de las funciones que los usan: el Pico solo
+# necesita frame_topic() y frame_size(), y en MicroPython zlib puede no estar disponible.
 
 
 def frame_topic(width, height):
@@ -30,7 +27,9 @@ def frame_size(width, height):
 
 def parse_frame_topic(topic):
     """'.../camera/frame/rgb565_160x120' -> (160, 120). ValueError si no es un tópico de imagen."""
-    match = _TOPIC_RE.search(topic)
+    import re
+
+    match = re.search(r"rgb565_(\d+)x(\d+)$", topic)
     if match is None or TOPIC_FRAME_PREFIX not in topic:
         raise ValueError("no es un tópico de imagen: %s" % topic)
     width, height = int(match.group(1)), int(match.group(2))
@@ -58,11 +57,17 @@ def rgb565_to_rgb(data):
 
 
 def _chunk(kind, body):
+    import struct
+    import zlib
+
     return struct.pack(">I", len(body)) + kind + body + struct.pack(">I", zlib.crc32(kind + body) & 0xFFFFFFFF)
 
 
 def rgb_to_png(width, height, rgb):
     """RGB (3 bytes por píxel) -> archivo PNG en bytes, sin librerías externas."""
+    import struct
+    import zlib
+
     if len(rgb) != width * height * 3:
         raise ValueError("se esperaban %d bytes de RGB y llegaron %d" % (width * height * 3, len(rgb)))
     row = width * 3
