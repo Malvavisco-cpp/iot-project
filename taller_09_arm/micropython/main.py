@@ -150,7 +150,7 @@ def main():
 
     wifi = WiFiLink(scheduler, config.WIFI_SSID, read_wifi_password())
 
-    MQTTTransport(
+    transport = MQTTTransport(
         scheduler,
         node,
         wifi,
@@ -172,6 +172,17 @@ def main():
         config.NTP_HOST,
         should_defer=lambda: player.active or choreographer.due_within(5000),
         on_sync=robot.publish_status,
+    )
+
+    # Cámara (taller 12): si falla, el robot sigue igual sin ella.
+    import camera_task
+
+    camera_task.make(
+        config,
+        scheduler,
+        node,
+        should_defer=(lambda: player.active) if config.CAMERA_PAUSE_WHILE_MOVING else None,
+        is_online=lambda: transport.connected,
     )
 
     tap = StatsTap(node)

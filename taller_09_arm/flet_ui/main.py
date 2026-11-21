@@ -11,12 +11,13 @@ Ejecutar desde la carpeta del proyecto:   python -m flet_ui.main
 Todo lo que se manda también lo recibe el gemelo virtual (mismos tópicos).
 """
 
+import base64
 import json
 from datetime import datetime, timedelta
 
 import flet as ft
 
-from common import config, maneuvers, motion, oled_view
+from common import camera, config, maneuvers, motion, oled_view
 from flet_ui import model
 from flet_ui.mqtt_client import MqttClient
 
@@ -39,6 +40,10 @@ def _card(title, controls):
         border_radius=ft.BorderRadius.all(12),
         bgcolor=ft.Colors.with_opacity(0.08, ft.Colors.WHITE),
     )
+
+
+# PNG de 1x1 píxel transparente: Image necesita un src desde el principio.
+_BLANK_PNG_B64 = base64.b64encode(camera.rgb_to_png(1, 1, b"\x00\x00\x00")).decode("ascii")
 
 
 def _field(label, value, width=110):
@@ -174,6 +179,18 @@ class CoreoView:
             ft.Text("Watchdog (lo mismo que muestra el OLED):", size=12, color=ft.Colors.BLUE_GREY_300),
             self.watchdog_text,
         ])
+        # 6. Cámara
+        self.camera_info = ft.Text("Esperando imágenes en %s..." % camera.TOPIC_FRAME_FILTER, size=13)
+        self.camera_image = ft.Image(src=_BLANK_PNG_B64, width=320, height=240)
+        self._frames = 0
+        camera_card = _card("6. Cámara OV7670 (taller 12)", [
+            self.camera_image,
+            self.camera_info,
+            ft.Text("El robot publica cada imagen en bruto (RGB565) en %s<ancho>x<alto>; aquí se "
+                    "convierte a PNG y se muestra. Si el robot se está moviendo no manda imágenes "
+                    "(CAMERA_PAUSE_WHILE_MOVING en micropython/config.py)." % (camera.TOPIC_FRAME_PREFIX + "rgb565_"),
+                    size=12, color=ft.Colors.BLUE_GREY_300),
+        ])
         # 5. MeArm
         self.tip_x = _field("x punta (dm)", 1.2)
         self.tip_y = _field("y punta (dm)", 0.8)
@@ -202,6 +219,7 @@ class CoreoView:
             state_card,
             maneuvers_card,
             arm_card,
+            camera_card,
             choreo_card,
             ft.Row([robot_card, twin_card], wrap=True, spacing=12, vertical_alignment=ft.CrossAxisAlignment.START),
             _card("Último envío", [self.sent]),
@@ -371,7 +389,23 @@ class CoreoView:
         self.broker_pill.bgcolor = ft.Colors.GREEN_700 if connected else ft.Colors.RED_700
         self._refresh(self.broker_pill)
 
+    def on_frame(self, topic, payload):
+        try:
+            width, height, png = camera.frame_to_png(topic, payload)
+        except ValueError as e:
+            self.camera_info.value = "Imagen descartada: %s" % e
+            self._refresh(self.camera_info)
+            return
+        self._frames += 1
+        self.camera_image.src = base64.b64encode(png).decode("ascii")
+        self.camera_image.width, self.camera_image.height = width * 2, height * 2
+        self.camera_info.value = "RGB565 %dx%d | %d bytes | imagen #%d" % (width, height, len(payload), self._frames)
+        self._refresh(self.camera_image, self.camera_info)
+
     def on_message(self, topic, payload):
+        if camera.TOPIC_FRAME_PREFIX in topic:
+            self.on_frame(topic, payload)  # las imágenes son bytes en bruto, no JSON
+            return
         try:
             data = json.loads(payload.decode("utf-8"))
         except (ValueError, UnicodeDecodeError):
@@ -433,7 +467,8 @@ def main(page: ft.Page):
     client = MqttClient(
         config.BROKER,
         config.PORT,
-        [config.PREFIX + t for t in (motion.TOPIC_STATUS, motion.TOPIC_ONLINE, motion.TOPIC_WATCHDOG)],
+        [config.PREFIX + t for t in (motion.TOPIC_STATUS, motion.TOPIC_ONLINE, motion.TOPIC_WATCHDOG,
+                                     camera.TOPIC_FRAME_FILTER)],
         view.on_message,
         view.on_link,
     )

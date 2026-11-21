@@ -37,15 +37,17 @@ NTP_HOST = "pool.ntp.org"
 # --- Motores: L298N mini (PWM directo en IN1..IN4), igual que el taller 08 ---
 # "mini" o "l298n" (L298N grande / TB6612, con ENA/ENB aparte).
 MOTOR_DRIVER = "mini"
-LEFT_IN1_GPIO = 2              # IN1
-LEFT_IN2_GPIO = 3              # IN2
-RIGHT_IN1_GPIO = 6             # IN3
-RIGHT_IN2_GPIO = 7             # IN4
-LEFT_PWM_GPIO = 8              # solo "l298n": ENA  (déjelo aunque no lo use)
-RIGHT_PWM_GPIO = 9             # solo "l298n": ENB  (déjelo aunque no lo use)
+# Pines del montaje con cámara (taller 12): GP0-GP13 y GP18-GP22 son de la cámara y la
+# OLED, así que los motores van en GP14-GP17 (ver la tabla de pines del README).
+LEFT_IN1_GPIO = 17             # IN1
+LEFT_IN2_GPIO = 16             # IN2
+RIGHT_IN1_GPIO = 14            # IN3
+RIGHT_IN2_GPIO = 15            # IN4
+LEFT_PWM_GPIO = None           # solo "l298n": ENA (con "mini" no se usa; con "l298n" ponga un GPIO libre)
+RIGHT_PWM_GPIO = None          # solo "l298n": ENB
 STBY_GPIO = None               # solo TB6612
 LEFT_INVERTED = False
-RIGHT_INVERTED = False
+RIGHT_INVERTED = True          # el motor derecho va montado en espejo
 MOTOR_PWM_FREQ_HZ = 1000
 
 # Fracción del PWM (0-1) con la que el motor apenas arranca. A PWM bajo el motor
@@ -67,11 +69,32 @@ SERVO_ALPHA0_GPIO = None
 SERVO_ALPHA1_GPIO = 11         # hombro (q1)
 SERVO_ALPHA2_GPIO = 12         # codo (q2, mueve el antebrazo)
 
-# --- OLED SSD1306 128x64 (I2C0) y potenciómetro -----------------------------
-OLED_SDA_GPIO = 4
-OLED_SCL_GPIO = 5
+# --- OLED 128x64 (I2C0) y potenciómetro -----------------------------------------
+# La cámara ocupa GP2-GP9 (datos), así que la OLED se mueve de GP4/GP5 a GP20/GP21
+# (también son I2C0: SDA = GP20, SCL = GP21).
+OLED_SDA_GPIO = 20
+OLED_SCL_GPIO = 21
 OLED_I2C_ADDR = 0x3C
-POT_GPIO = 26                  # ADC0: pata central del potenciómetro
+POT_GPIO = 28                  # ADC2: pata central del potenciómetro (GP26/GP27 los usa la cámara o quedan libres)
+
+# --- Cámara OV7670 (taller 12) ----------------------------------------------------
+CAMERA_ENABLED = True          # False = el robot arranca sin cámara
+CAMERA_PINS = {
+    "data_0": 2,               # D0-D7 = GP2..GP9, seguidos y en orden (lo exige el PIO)
+    "mclk": 22,                # XCLK (PWM a 16 MHz). GP22 = slice 3: ningún motor ni servo comparte slice con él
+    "pclk": 1,
+    "href": 10,
+    "vsync": 13,
+    "reset": 0,
+    "shutdown": None,          # PWDN: unido a GND en el módulo (no hay pin libre para él)
+    "sda1": 18,                # SCCB = I2C1 (SDA = GP18, SCL = GP19)
+    "scl1": 19,
+}
+CAMERA_I2C_ID = 1
+CAMERA_SIZE_DIV = 2            # 0=640x480 1=320x240 2=160x120 3=80x60 4=40x30
+CAMERA_TEST_PATTERN = 0        # 0 = imagen real; 2 = barras de color (para probar el envío sin escena)
+CAMERA_PERIOD_MS = 2000        # cada cuánto se manda una imagen
+CAMERA_PAUSE_WHILE_MOVING = True   # no manda imágenes mientras el robot ejecuta un movimiento
 
 # --- Tiempos --------------------------------------------------------------
 MOTION_PERIOD_MS = 20

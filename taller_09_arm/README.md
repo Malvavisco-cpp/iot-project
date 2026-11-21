@@ -83,8 +83,10 @@ taller_09_arm/
 │   ├── motion.py           #   tópicos + cómo se lee un estado
 │   ├── config.py           #   broker, PREFIX, carro, servos y límites del MeArm
 │   ├── drive.py, motor.py, kinematics.py, maneuvers.py, servo.py
-│   └── oled_view.py, timeutil.py, wallclock.py, ticks.py
+│   └── camera.py, oled_view.py, timeutil.py, wallclock.py, ticks.py   # camera.py: tópicos y RGB565 -> PNG
 ├── micropython/            # -> RAÍZ del Pico (main.py, config.py, tasks.py, ... + PicoROS)
+│   ├── drivers/            #   OV7670 (ov7670.py, ov7670_wrapper.py) -> carpeta drivers/ del Pico
+│   └── camera_task.py, camara_test.py
 ├── flet_ui/                # app del PC (bloque 5: MeArm con cinemática inversa)
 ├── tools/
 │   ├── robot_simulator.py  #   robot virtual con las mismas clases
@@ -111,19 +113,20 @@ Pines en [`micropython/config.py`](micropython/config.py). Son números **GPIO**
 
 | Pico | Va a | |
 |---|---|---|
-| `GP2`, `GP3` | IN1, IN2 del L298N mini | motor izquierdo |
-| `GP6`, `GP7` | IN3, IN4 del L298N mini | motor derecho |
+| `GP17`, `GP16` | IN1, IN2 del L298N mini | motor izquierdo |
+| `GP14`, `GP15` | IN3, IN4 del L298N mini | motor derecho (`RIGHT_INVERTED = True`) |
 | `GP11` | señal del servo del **hombro** (alpha1 = q1) | sube y baja todo el brazo |
 | `GP12` | señal del servo del **codo** (q2) | por una varilla extiende y recoge el antebrazo (está en la base) |
-| `GP4` (SDA), `GP5` (SCL) | OLED SSD1306 128x64 I2C | VCC → 3V3, GND → GND |
-| `GP26` (ADC0) | pata **central** del potenciómetro | las otras dos a 3V3 y GND |
+| `GP20` (SDA), `GP21` (SCL) | OLED 128x64 I2C | VCC → 3V3, GND → GND. **Antes era GP4/GP5**: la cámara usa GP2-GP9 |
+| `GP28` (ADC2) | pata **central** del potenciómetro | las otras dos a 3V3 y GND |
+| `GP0`-`GP10`, `GP13`, `GP18`, `GP19`, `GP22` | cámara OV7670 | ver [la sección de la cámara](#cámara-ov7670-taller-12) |
 | `GND` | GND del L298N, de los servos y de las baterías | **tierra común obligatoria** |
 
 > ℹ️ **Dos servos, sin base giratoria.** Este robot tiene solo dos servos, los dos en la base: el del **hombro** (`alpha1`) sube y baja todo el brazo, y el del **codo** (`alpha2`) extiende y recoge el antebrazo con una varilla. `SERVO_ALPHA0_GPIO = None` en `micropython/config.py`: `alpha0_deg` se acepta en los mensajes (el gemelo sí lo usa) pero no mueve nada. Si algún día agregan un servo de giro, pongan su GPIO ahí.
 >
 > ⚠️ **Alimentación:** los motores van con su batería al `+`/`-` del L298N mini. Los **servos van a una fuente de 5 V aparte** (los servos moviéndose piden más de lo que da el Pico por USB; si se alimentan del Pico, se reinicia en plena coreografía). Todas las tierras unidas.
 >
-> ⚠️ **PWM:** dos pines que comparten *slice* comparten frecuencia, y los motores van a 1000 Hz y los servos a 50 Hz. Slice = `(GPIO // 2) % 8`: GP2/3 = 1, GP6/7 = 3, GP10/11 = 5, GP12 = 6 → no chocan. Si cambian pines, revisen que un servo no quede en el mismo slice que un motor (p. ej. **GP18/19 comparten slice con GP2/3**).
+> ⚠️ **PWM:** dos pines que comparten *slice* comparten frecuencia, y los motores van a 1000 Hz, los servos a 50 Hz y el reloj de la cámara a 16 MHz. Slice = `(GPIO // 2) % 8`: servos GP11 = 5 y GP12 = 6, motores GP14/15 = 7 y GP16/17 = 0, reloj de la cámara GP22 = 3 → no chocan. Si cambian pines, revisen que ninguno quede en el mismo slice que otro (p. ej. **el reloj de la cámara en GP10 chocaría con el servo del hombro en GP11**).
 
 Si tienen un L298N grande o un TB6612, pongan `MOTOR_DRIVER = "l298n"` y usen `LEFT_PWM_GPIO`/`RIGHT_PWM_GPIO` (ENA/ENB), como en el taller 08.
 
@@ -145,7 +148,7 @@ Con el intérprete en **MicroPython (Raspberry Pi Pico)**: **Ver > Archivos**. A
 
 1. En "Este computador", vayan a `taller_09_arm/`.
 2. Clic derecho en la carpeta **`common`** → **"Subir a /"**.
-3. Entren a `micropython/`, seleccionen **todo** (todos los `.py` **y la carpeta `umqtt`**) → clic derecho → **"Subir a /"**. Quedan sueltos en la raíz.
+3. Entren a `micropython/`, seleccionen **todo** (todos los `.py` **y las carpetas `umqtt` y `drivers`**) → clic derecho → **"Subir a /"**. Quedan sueltos en la raíz.
 4. **Archivo > Nuevo**, escriban **solo** la contraseña del WiFi, **Archivo > Guardar como... → Raspberry Pi Pico → `.env`**.
 5. Si el Pico tenía archivos de otro taller (`car_task.py`, `pwm_out.py`...), bórrenlos o no estorban; lo importante es que `main.py`, `config.py` y `common/` sean los de este proyecto.
 
@@ -158,6 +161,8 @@ El Pico debe quedar así:
 ├── mqtt.py  wifi.py  safe_scheduler.py
 ├── node.py  task.py  scheduler.py  util.py  ring_buffer.py  watchdog_task.py
 ├── umqtt/simple.py
+├── camera_task.py  camara_test.py
+├── drivers/ov7670.py  ov7670_wrapper.py
 └── common/  __init__.py arm.py carrobot.py choreographer.py config.py drive.py kinematics.py
              maneuvers.py mearm.py motion.py motor.py oled_view.py player.py servo.py ticks.py
              timeutil.py wallclock.py
@@ -299,6 +304,46 @@ python -m pytest -q
 
 ---
 
+## Cámara OV7670 (taller 12)
+
+El robot manda imágenes de la cámara por MQTT y Flet las muestra en el bloque **6. Cámara**. Enunciado: `IoT_ws/12_Taller_OV7670.md`.
+
+```text
+cámara --D0-D7, PCLK, HREF, VSYNC--> PIO + DMA del Pico --> CameraTask --> MQTT --> Flet
+```
+
+**Conexiones** (ya no se pueden usar los pines del taller 12 tal cual: chocaban con los servos GP11/GP12 y los motores GP14/GP15, así que PCLK, HREF, VSYNC, el reloj y el I2C de la cámara se movieron). Están en `CAMERA_PINS` de `micropython/config.py`:
+
+| Cámara | Pico | Nota |
+|---|---|---|
+| `D0`-`D7` | `GP2`-`GP9` | seguidos y **en orden**: el PIO lo exige |
+| `XCLK` / `MCLK` | `GP22` | reloj de 16 MHz generado por PWM |
+| `PCLK` | `GP1` | |
+| `HREF` | `GP10` | |
+| `VSYNC` | `GP13` | |
+| `RESET` | `GP0` | |
+| `SDA` / `SCL` (SCCB) | `GP18` / `GP19` | I2C1 |
+| `PWDN` | **GND** | no hay pin libre; en el módulo se une a GND (`"shutdown": None`) |
+| `3V3`, `GND` | `3V3`, `GND` | |
+
+La OLED pasó de GP4/GP5 a **GP20/GP21** (I2C0) y el potenciómetro a **GP28**. Con esto los 26 GPIO disponibles quedan usados sin repetir ninguno; GP26 y GP27 quedan libres.
+
+**Cómo probarla (sin WiFi), en este orden:**
+
+1. Suban a la raíz del Pico la carpeta **`drivers/`**, `camera_task.py` y `camara_test.py`, además de `config.py`, `main.py`, `mqtt.py` y `common/` (que ahora trae `camera.py`).
+2. Abran `camara_test.py` en Thonny y pulsen **F5**. En la Shell debe salir `I2C1 ...: ['0x21'] -> OK` y luego dos capturas.
+3. Con las **barras de color** (`barras(True)`; `capturar()`) deben salir bastantes colores distintos (más de 8). Si sale `TODO EN CERO` o `NO llegó imagen`, el problema es de cableado (PCLK/HREF/VSYNC o datos).
+4. Con `barras(False)` es la imagen real: apunten la cámara a algo con luz.
+5. Ya con la cámara funcionando, corran `main.py` y abran Flet: el bloque 6 muestra la imagen cada `CAMERA_PERIOD_MS` (2 s).
+
+**Cosas a tener en cuenta**
+- `CAMERA_PAUSE_WHILE_MOVING = True`: mientras el robot ejecuta un movimiento o una coreografía **no manda imágenes**. Publicar 38 KB por WiFi puede tardar cientos de milisegundos y retrasaría los pasos. Pónganlo en `False` si prefieren ver la cámara siempre.
+- Si la cámara no inicia (cable suelto, sin reloj), el robot arranca igual y dice por qué en la Shell (`Cámara: no se pudo iniciar...`).
+- `CAMERA_TEST_PATTERN = 2` envía barras de color: sirve para probar el envío sin depender de la escena.
+- Resolución en `CAMERA_SIZE_DIV` (2 = 160x120 = 38 400 bytes). Más grande = más memoria y más tiempo por WiFi; con 320x240 (153 600 bytes) la memoria del Pico queda justa.
+- El broker público (`broker.hivemq.com`) puede rechazar mensajes grandes; si no llegan imágenes pero sí el resto, prueben con `CAMERA_SIZE_DIV = 3` (80x60) o con el broker de la clase.
+- Solo se ha probado la conversión de imágenes en el PC (`tests/common/test_camera.py`); el hardware está sin probar.
+
 ## Contrato MQTT
 
 | Tópico | Sentido | Retenido | Contenido |
@@ -308,6 +353,7 @@ python -m pytest -q
 | `motion/status` | robot → PC | sí | `{"mode", "name", "step", "steps", "arm_deg", "sequences", "scheduled", "clock_synced"}` |
 | `watchdog/stats` | robot → PC | no | telemetría del `WatchdogTask` de PicoROS |
 | `node/online` | robot → PC | sí | `{"online": bool}`; Last Will si el robot se cae |
+| `camera/frame/rgb565_<ancho>x<alto>` | robot → PC | no | imagen en bruto, RGB565 (2 bytes por píxel, byte alto primero); **no es JSON**, el tamaño va en el nombre del tópico |
 
 `create` con `run_at` programa la secuencia en el robot (lo dice el `.md`), pero **los gemelos lo ignoran**; por eso la app manda siempre un `schedule` aparte.
 

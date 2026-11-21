@@ -76,7 +76,7 @@ class MQTTTransport(Task):
     def publish(self, topic, data):
         if not self.connected:
             return
-        if not isinstance(data, (str, bytes)):
+        if not isinstance(data, (str, bytes, bytearray, memoryview)):  # imágenes de la cámara van en bruto
             data = json.dumps(data)
         try:
             self.client.publish(
