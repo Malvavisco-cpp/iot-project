@@ -23,7 +23,12 @@ _size = None
 
 def escanear():
     i2c = I2C(config.CAMERA_I2C_ID, scl=Pin(_pins["scl1"]), sda=Pin(_pins["sda1"]), freq=400000)
-    # El reloj tiene que estar corriendo para que la cámara conteste.
+    # La cámara solo contesta con PWDN en bajo, RESET en alto y el reloj corriendo.
+    if _pins.get("shutdown") is not None:
+        Pin(_pins["shutdown"], Pin.OUT).value(0)
+    if _pins.get("reset") is not None:
+        Pin(_pins["reset"], Pin.OUT).value(1)
+    time.sleep_ms(10)
     pwm = PWM(Pin(_pins["mclk"]))
     pwm.freq(16_000_000)
     pwm.duty_u16(32768)
