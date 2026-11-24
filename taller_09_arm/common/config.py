@@ -51,5 +51,7 @@ DEFAULT_SPEED_DM_S = 2.0
 # la recta suma STRAIGHT_W_TRIM y los arcos multiplican su w (2.175 / 0.4 y 1.9 / 0.4).
 # El gemelo virtual NO se corrige: recibe los (v, w) teóricos de los tópicos.
 STRAIGHT_W_TRIM = 0.6
-ARC_W_GAIN_LEFT = 5.4375
-ARC_W_GAIN_RIGHT = 4.75
+# OJO: 5.4375 / 4.75 se midieron a 0.4 m/s y en la coreografía (v ~ 0.15 m/s) hacen girar
+# de más (la rueda interior se va en reversa). En 1.0 no se corrige nada: ajuste desde ahí.
+ARC_W_GAIN_LEFT = 1.0
+ARC_W_GAIN_RIGHT = 1.0
