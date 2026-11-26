@@ -187,7 +187,7 @@ def main():
         config,
         scheduler,
         node,
-        should_defer=lambda: (config.CAMERA_PAUSE_WHILE_MOVING and player.active) or mision.settling(),
+        should_defer=lambda: (getattr(config, "CAMERA_PAUSE_WHILE_MOVING", True) and player.active) or mision.settling(),
         is_online=lambda: transport.connected,
         on_frame=mision.on_frame,
     )

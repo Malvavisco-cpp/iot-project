@@ -59,7 +59,9 @@ class CameraTask(Task):
 
 def make(config, scheduler, node, should_defer=None, is_online=None, on_frame=None):
     """Crea la cámara y su tarea. Devuelve None (y dice por qué) si algo falla."""
-    if not config.CAMERA_ENABLED:
+    if not getattr(config, "CAMERA_ENABLED", False):
+        if not hasattr(config, "CAMERA_ENABLED"):
+            print("Cámara: este config.py no tiene la parte de la cámara (CAMERA_*): es una versión vieja. Sin cámara.")
         return None
     try:
         from machine import I2C

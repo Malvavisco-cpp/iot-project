@@ -58,6 +58,29 @@ def archivos():
             _mal("falta %s (suba la carpeta common/ y todo micropython/)" % a)
 
 
+NOMBRES_CONFIG = [
+    "WIFI_SSID", "NODE_NAME", "MOTOR_DRIVER", "LEFT_IN1_GPIO", "LEFT_IN2_GPIO", "RIGHT_IN1_GPIO",
+    "RIGHT_IN2_GPIO", "SERVO_ALPHA1_GPIO", "SERVO_ALPHA2_GPIO", "OLED_SDA_GPIO", "OLED_SCL_GPIO",
+    "CAMERA_ENABLED", "CAMERA_PINS", "CAMERA_I2C_ID", "CAMERA_SIZE_DIV", "CAMERA_TEST_PATTERN",
+    "CAMERA_PERIOD_MS", "CAMERA_PAUSE_WHILE_MOVING", "CAMERA_PERIOD_MISION_MS", "SERVO_AL_ARRANCAR",
+]
+
+
+def config_py():
+    _titulo("1b. ¿Este config.py del Pico es el nuevo?")
+    faltan = [n for n in NOMBRES_CONFIG if not hasattr(config, n)]
+    if faltan:
+        _mal("a config.py le faltan: %s  -> es una versión vieja; suba el nuevo (guardando antes su WIFI_SSID y pines)"
+             % ", ".join(faltan))
+    else:
+        _ok("config.py tiene todas las opciones")
+    print("  pines: motores IN1/IN2 izq=%s/%s der=%s/%s | servos hombro=%s codo=%s | OLED SDA/SCL=%s/%s" % (
+        getattr(config, "LEFT_IN1_GPIO", "?"), getattr(config, "LEFT_IN2_GPIO", "?"),
+        getattr(config, "RIGHT_IN1_GPIO", "?"), getattr(config, "RIGHT_IN2_GPIO", "?"),
+        getattr(config, "SERVO_ALPHA1_GPIO", "?"), getattr(config, "SERVO_ALPHA2_GPIO", "?"),
+        getattr(config, "OLED_SDA_GPIO", "?"), getattr(config, "OLED_SCL_GPIO", "?")))
+
+
 def importar():
     _titulo("2. Importaciones (si falla una, sale el error de Python)")
     for m in MODULOS:
@@ -290,6 +313,7 @@ def todo():
     del _fallas[:]
     print("DIAGNÓSTICO DE LA MISIÓN")
     archivos()
+    config_py()
     importar()
     medidas()
     memoria()
