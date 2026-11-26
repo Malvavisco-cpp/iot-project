@@ -81,6 +81,21 @@ def config_py():
         getattr(config, "OLED_SDA_GPIO", "?"), getattr(config, "OLED_SCL_GPIO", "?")))
 
 
+def driver_camara():
+    _titulo("1c. ¿El driver de la cámara del Pico es el corregido?")
+    for ruta in ("drivers/ov7670.py", "ov7670.py"):
+        if _existe(ruta):
+            nuevo = "shutdown_pin_no is not None" in open(ruta).read()
+            (_ok if nuevo else _mal)("%s: %s" % (ruta, "corregido" if nuevo else "VIEJO (no acepta shutdown=None): suba el del repo"))
+    pines = getattr(config, "CAMERA_PINS", None)
+    print("  CAMERA_PINS =", pines)
+    if pines is not None:
+        for k, v in pines.items():
+            if v is not None and (not isinstance(v, int) or v < 0 or v > 28):
+                _mal("CAMERA_PINS['%s'] = %r no es un GPIO válido (0-28)" % (k, v))
+    print("  carpeta del Pico:", sorted(os.listdir()))
+
+
 def importar():
     _titulo("2. Importaciones (si falla una, sale el error de Python)")
     for m in MODULOS:
@@ -314,6 +329,7 @@ def todo():
     print("DIAGNÓSTICO DE LA MISIÓN")
     archivos()
     config_py()
+    driver_camara()
     importar()
     medidas()
     memoria()
