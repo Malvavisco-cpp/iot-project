@@ -16,7 +16,7 @@ OLED, cámara, MQTT y Flet.
 
 | # | Tarea | Estado | Dónde |
 |---|-------|--------|-------|
-| 0 | Calibrar la cámara: fps, jitter y huecos reales | script listo; falta correrlo con el robot | `pc/calibrar_camara.py` |
+| 0 | Calibrar la cámara: fps, jitter y huecos reales | script listo; falta correrlo con el robot (sección 7) | `pc/calibrar_camara.py` |
 | 1 | Detectar el punto rojo con OpenCV (para calibrar el color en el PC) | hecho, con pruebas | `pc/vision.py` |
 | 2 | Medir la geometría y llenar `MISION` | **pendiente: llenar las medidas** | `taller_09_arm/common/config.py` |
 | 3 | Detección del rojo en el Pico (sin OpenCV) | escrito y probado en el PC; **falta probarlo en el Pico** | `common/vision_rojo.py`, `micropython/deteccion_test.py` |
@@ -138,27 +138,96 @@ adelantada (~10 cm del hombro) y cumple `-160 <= alpha2 - alpha1 <= -20`.
 El `PREFIX` está en el mismo archivo y debe llevar **su número de robot con 2 dígitos**
 (hoy dice `robot4`). El color en HSV para el prototipo del PC está en `pc/ajustes.py`.
 
-## 7. Cómo probar, de a una pieza
+## 7. Cómo correr las tareas que faltan
 
-Suba al Pico: `main.py`, `config.py`, `mision_task.py`, `camera_task.py`, `deteccion_test.py`,
-`camara_test.py`, `drivers/`, `common/` (con `vision_rojo.py` y `mision.py`) y lo demás de siempre.
+Se hacen **en este orden**: cada una necesita que la anterior funcione.
 
-0. **Ritmo de la cámara (en el PC):** con el robot publicando, `pip install -r pc/requirements.txt` y
-   `cd pc && python calibrar_camara.py 30 --png`. Da `fps`, `jitter_s`, `huecos` y guarda
-   `ultima.png`. Si hay huecos o imágenes corruptas, suba `CAMERA_PERIOD_MS` o baje la resolución
-   (`CAMERA_SIZE_DIV`: 2 = 160x120, 3 = 80x60).
-1. **Detección (sin motores):** `deteccion_test.py`, F5, `ver()`. Con un punto rojo de 1 cm a 10 cm
-   debe decir `VISTO` con `area >= 2` y cuánto tardó. Si dice `no veo rojo`, imprime el color del
-   píxel más rojo: con eso se ajustan `rojo_r_min` y `rojo_dif_min`. Con `repetir(10)` se mueve el
-   punto y `cx`, `cy` deben cambiar.
-2. **Geometría:** con el punto a 10 cm, `ver()` da su fila `cy`. Compare la distancia que calcula el
-   robot con la real; si no cuadra, revise altura, inclinación y `fov_v`.
-3. **Misión completa:** robot en el piso, punto a 10 cm y medidas llenas. En Flet, tarjeta 7,
-   **ARRANCAR misión**. Después no se toca nada: mire la cruz verde y el estado. Si algo sale mal,
-   **DETENER misión**.
-4. **Sin Flet:** también se arranca publicando `{"action": "start"}` en `<PREFIX>mission/cmd`.
+### Antes de todo: dejar el robot listo (una vez)
 
-Por la Shell del Pico se ve cada vuelta: `Misión: buscando | detección 180 ms | {...}`.
+1. **Su número de robot.** En `taller_09_arm/common/config.py` ponga `PREFIX = "UDFJC/iot_ws/robot34/"`
+   (su número, 2 dígitos y la barra final). El mismo archivo lo usa el robot y Flet.
+2. **WiFi.** En `taller_09_arm/micropython/config.py` ponga `WIFI_SSID` (red de 2.4 GHz). La contraseña
+   va sola en un archivo `.env` en la raíz del Pico (Thonny: Archivo > Nuevo, escriba solo la contraseña,
+   Guardar como > Raspberry Pi Pico > `.env`).
+3. **Subir el código al Pico con Thonny** (no copiar y pegar: se suben los archivos). Intérprete en
+   *MicroPython (Raspberry Pi Pico)*, Ver > Archivos:
+   - clic derecho en la carpeta `taller_09_arm/common` > **Subir a /**
+   - entre a `taller_09_arm/micropython/`, seleccione **todo** (los `.py` y las carpetas `drivers` y
+     `umqtt`) > clic derecho > **Subir a /**
+4. Reinicie el Pico (botón Stop/Restart de Thonny). En la Shell debe salir
+   `Robot listo | nodo: ... | prefijo: UDFJC/iot_ws/robot34/` y `Cámara OV7670 lista: 160x120`.
+
+> **Cada vez que cambie `common/config.py`** (las medidas de `MISION`, el `PREFIX`) hay que volver a
+> subir la carpeta `common` al Pico y reiniciarlo, porque el robot lee las medidas de ahí.
+
+### Tarea 0 · Calibrar la cámara (en el PC)
+
+Con el robot encendido y publicando imágenes:
+
+```bash
+cd proyecto_final/pc
+python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+python calibrar_camara.py 30 --png
+```
+
+Escucha 30 s y muestra `fps`, `jitter_s`, `huecos` y cuántas imágenes llegaron corruptas; guarda
+`ultima.png` para ver qué ve la cámara. Si dice que no llegaron imágenes: revise el `PREFIX` y corra
+`camara_test.py` en el Pico (F5; debe salir `0x21 -> OK`). Si hay huecos o corruptas, suba
+`CAMERA_PERIOD_MS` o baje la resolución (`CAMERA_SIZE_DIV`: 2 = 160x120, 3 = 80x60).
+
+### Tarea 2 · Medir y llenar `MISION`
+
+1. Mida lo de la sección 6 (altura, inclinación, campos de visión, `punta_dist_m`).
+2. Para el campo de visión use `calibrar_camara.py 5 --png` con la cámara de frente a una pared a una
+   distancia conocida, y mida en `ultima.png` cuánto cabe.
+3. Escríbalos en `MISION` (`taller_09_arm/common/config.py`), **suba `common` al Pico y reinícielo**.
+
+Para medir `punta_dist_m`, baje el brazo desde Flet (tarjeta 5 del brazo, o tarjeta 1 con
+`alpha1 = 0`, `alpha2 = -90` y **Solo brazo**; la misma pose que usará la misión) y mida en el piso la
+distancia entre la cámara y la punta del lápiz.
+
+### Tarea 3 · Detección del rojo en el Pico (sin motores)
+
+1. En Thonny abra `deteccion_test.py` (en el Pico o en `micropython/`) y pulse **F5**.
+2. Ponga el punto rojo de 1 cm a 10 cm frente a la cámara. En la Shell escriba `ver()`.
+   - Bien: `VISTO (xx ms): cx=... cy=... area=... err_x=...`.
+   - `no veo rojo`: imprime el color del píxel más rojo. Con ese R, G, B ajuste `rojo_r_min` y
+     `rojo_dif_min` en `MISION` (suba `common` y reinicie).
+3. `repetir(10)` mientras mueve el punto: `cx` y `cy` deben cambiar. Anote cuántos ms tarda; si pasa de
+   ~500 ms, baje la resolución (`CAMERA_SIZE_DIV = 3`).
+
+### Tareas 4 y 5 · Ciclo autónomo y brazo (el robot)
+
+**Primera prueba con las ruedas en el aire** (levante el carro): así se ve hacia dónde gira y cuánto
+avanza sin que se vaya. Después, en el piso.
+
+1. Pico reiniciado con `main.py` (sección "Antes de todo"), medidas llenas, punto rojo a 10 cm.
+2. Arranque Flet (Tarea 6) y pulse **ARRANCAR misión**. Sin Flet también sirve publicar
+   `{"action": "start"}` en `<PREFIX>mission/cmd` (MQTTX o la página del profesor).
+3. **No toque nada.** En la Shell del Pico sale cada vuelta:
+   `Misión: buscando | detección 180 ms | {'visto': True, 'err_x': 0.31, 'dist_m': 0.18, ...}`.
+   Debe girar hasta centrar el punto, avanzar, frenar, volver a mirar y, al final, bajar el brazo
+   (`fase: listo`).
+4. Para frenarla: **DETENER misión** en Flet o `{"action": "stop"}`.
+5. Si no arranca, el motivo sale en la Shell y en Flet (`faltan medidas: ...`).
+
+Ajustes típicos: gira de más o de menos → `w_giro_deg_s`; avanza de más o de menos → `v_dm_s`; para
+muy lejos o muy cerca → `punta_dist_m`; no lo ve al acercarse → `ciego_m`. Siempre: cambiar
+`common/config.py`, subir `common`, reiniciar.
+
+### Tarea 6 · Flet
+
+```bash
+cd taller_09_arm
+python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+python -m flet_ui.main
+```
+
+Arriba debe decir **Broker: conectado** y **Robot: quieto**. Baje a la tarjeta **6. Cámara** (debe
+mostrar la imagen) y a la **7. Misión autónoma**: **ARRANCAR misión** / **DETENER misión**, el estado y la
+cruz verde sobre el punto que detectó el robot. Flet y el robot deben usar el mismo broker y `PREFIX`.
 
 ## 8. Lo que probablemente haya que ajustar en el robot
 
