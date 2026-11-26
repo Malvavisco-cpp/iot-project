@@ -122,4 +122,4 @@ class MisionTask(Task):
 def make(config, scheduler, node, player):
     from common.config import MISION
 
-    return MisionTask(scheduler, node, player, MISION, camera_period_ms=config.CAMERA_PERIOD_MISION_MS)
+    return MisionTask(scheduler, node, player, MISION, camera_period_ms=getattr(config, "CAMERA_PERIOD_MISION_MS", 700))
