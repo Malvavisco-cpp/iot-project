@@ -22,6 +22,32 @@ FALLO = "fallo"
 _OBLIGATORIAS = ("cam_altura_m", "cam_inclinacion_deg", "fov_v_deg", "fov_h_deg", "punta_dist_m")
 
 
+# Rangos razonables: atrapan unidades equivocadas (cm en vez de m, radianes en vez de grados).
+_RANGOS = {
+    "cam_altura_m": (0.01, 1.0, "m"),
+    "cam_inclinacion_deg": (-20.0, 90.0, "grados"),
+    "fov_v_deg": (15.0, 140.0, "grados"),
+    "fov_h_deg": (15.0, 140.0, "grados"),
+    "punta_dist_m": (0.01, 0.5, "m"),
+}
+
+
+def medidas_raras(p):
+    """Medidas llenas pero con pinta de unidad equivocada. -> lista de textos."""
+    raras = []
+    for k, (lo, hi, unidad) in _RANGOS.items():
+        v = p.get(k)
+        if v is not None and not lo <= v <= hi:
+            raras.append("%s=%s (esperaba entre %s y %s %s)" % (k, v, lo, hi, unidad))
+    return raras
+
+
+def bajada_deg(cy, alto, inclinacion_deg, fov_v_deg):
+    """Cuántos grados BAJO la horizontal apunta el rayo de la fila `cy` (negativo = hacia arriba)."""
+    f = (alto / 2) / math.tan(math.radians(fov_v_deg) / 2)
+    return inclinacion_deg + math.degrees(math.atan((cy - alto / 2) / f))
+
+
 def build_cmd(action):
     return {"action": action}
 
@@ -68,6 +94,10 @@ class Mision:
         falta = faltan_medidas(self.p)
         if falta:
             self.fase, self.motivo = FALLO, "faltan medidas: " + ", ".join(falta)
+            return self.motivo
+        raras = medidas_raras(self.p)
+        if raras:
+            self.fase, self.motivo = FALLO, "medidas con unidad rara: " + "; ".join(raras)
             return self.motivo
         self.fase, self.motivo = BUSCANDO, ""
         self.iter = self.barridos = 0
@@ -117,7 +147,11 @@ class Mision:
                        "err_x": round(det["err_x"], 3), "ang_deg": round(ang, 1),
                        "dist_m": None if dist is None else round(dist, 3)}
         if dist is None:
-            return self._fallo("la geometría no cuadra: el punto queda por encima del horizonte")
+            b = bajada_deg(det["cy"], alto, p["cam_inclinacion_deg"], p["fov_v_deg"])
+            return self._fallo(
+                "el punto (fila %d) queda %.1f grados por encima del horizonte: con inclinación %.1f y "
+                "fov_v %.1f no puede estar en el piso. Revise cam_inclinacion_deg (¿es hacia abajo y en grados?) "
+                "y fov_v_deg" % (det["cy"], -b, p["cam_inclinacion_deg"], p["fov_v_deg"]))
         self.barridos = 0
 
         if abs(det["err_x"]) > p["tol_err_x"]:

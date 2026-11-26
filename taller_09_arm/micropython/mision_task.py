@@ -97,6 +97,8 @@ class MisionTask(Task):
             ms = time.ticks_diff(time.ticks_ms(), t0)
             estados = self.mision.decidir(det, ancho, alto)
             print("Misión: %s | detección %d ms | %s" % (self.mision.fase, ms, self.mision.ultima))
+            if self.mision.motivo:
+                print("Misión: MOTIVO:", self.mision.motivo)
             if estados:
                 self.player.play(estados)
             if not self.mision.corriendo:

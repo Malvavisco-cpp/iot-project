@@ -210,3 +210,17 @@ def test_simulacion_completa_llega_y_baja_el_brazo():
     assert m.fase in (LISTO, BRAZO), m.estado()
     llegada = math.hypot(objetivo[0] - x, objetivo[1] - y)
     assert abs(llegada - GEOM["punta_dist_m"]) < 0.03, llegada
+
+
+def test_unidades_raras_no_arrancan():
+    m = Mision(dict(GEOM, fov_h_deg=0.9, cam_altura_m=8.0))     # radianes en vez de grados, cm en vez de m
+    motivo = m.start()
+    assert m.fase == FALLO and "fov_h_deg" in motivo and "cam_altura_m" in motivo
+
+
+def test_fallo_por_horizonte_dice_los_grados():
+    m = Mision(dict(GEOM, cam_inclinacion_deg=2.0))
+    m.start()
+    det = {"cx": 119.6, "cy": 33.2, "area": 9, "err_x": 0.495, "err_y": -0.45}
+    assert m.decidir(det, W, H) is None
+    assert m.fase == FALLO and "por encima del horizonte" in m.motivo and "cam_inclinacion_deg" in m.motivo
