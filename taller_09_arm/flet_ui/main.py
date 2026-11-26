@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 
 import flet as ft
 
-from common import camera, config, maneuvers, motion, oled_view
+from common import camera, config, maneuvers, mision, motion, oled_view
 from flet_ui import model
 from flet_ui.mqtt_client import MqttClient
 
@@ -183,12 +183,28 @@ class CoreoView:
         self.camera_info = ft.Text("Esperando imágenes en %s..." % camera.TOPIC_FRAME_FILTER, size=13)
         self.camera_image = ft.Image(src=_BLANK_PNG_B64, width=320, height=240)
         self._frames = 0
+        self._ultimo_frame = None       # (tópico, bytes) para volver a dibujarlo cuando llega el estado
+        self._marca = None              # (cx, cy) del punto que detectó el robot
         camera_card = _card("6. Cámara OV7670 (taller 12)", [
             self.camera_image,
             self.camera_info,
             ft.Text("El robot publica cada imagen en bruto (RGB565) en %s<ancho>x<alto>; aquí se "
                     "convierte a PNG y se muestra. Si el robot se está moviendo no manda imágenes "
                     "(CAMERA_PAUSE_WHILE_MOVING en micropython/config.py)." % (camera.TOPIC_FRAME_PREFIX + "rgb565_"),
+                    size=12, color=ft.Colors.BLUE_GREY_300),
+        ])
+        # 7. Misión autónoma: Flet solo arranca y muestra; el robot decide solo
+        self.mision_text = ft.Text("Sin misión en curso.", size=13, selectable=True, font_family="monospace")
+        mision_card = _card("7. Misión autónoma (proyecto final)", [
+            ft.Row([
+                ft.Button(content="ARRANCAR misión", icon=ft.Icons.PLAY_ARROW, bgcolor=ft.Colors.GREEN_700,
+                          on_click=self._on_mision_start),
+                ft.Button(content="DETENER misión", icon=ft.Icons.STOP, bgcolor=ft.Colors.RED_700,
+                          on_click=self._on_mision_stop),
+            ]),
+            self.mision_text,
+            ft.Text("Un solo mensaje (%s). Después el robot ve el punto rojo, se mueve y baja el brazo "
+                    "solo; la cruz verde de la cámara es lo que él detectó." % mision.TOPIC_CMD,
                     size=12, color=ft.Colors.BLUE_GREY_300),
         ])
         # 5. MeArm
@@ -220,6 +236,7 @@ class CoreoView:
             maneuvers_card,
             arm_card,
             camera_card,
+            mision_card,
             choreo_card,
             ft.Row([robot_card, twin_card], wrap=True, spacing=12, vertical_alignment=ft.CrossAxisAlignment.START),
             _card("Último envío", [self.sent]),
@@ -389,14 +406,39 @@ class CoreoView:
         self.broker_pill.bgcolor = ft.Colors.GREEN_700 if connected else ft.Colors.RED_700
         self._refresh(self.broker_pill)
 
-    def on_frame(self, topic, payload):
+    def _on_mision_start(self, e):
+        self._try(lambda: self._publish(mision.TOPIC_CMD, mision.build_cmd("start"), "(ARRANCAR misión)"))
+
+    def _on_mision_stop(self, e):
+        self._try(lambda: self._publish(mision.TOPIC_CMD, mision.build_cmd("stop"), "(DETENER misión)"))
+
+    def _show_mision(self, s):
+        lineas = ["fase: %s   intento: %s" % (s.get("fase"), s.get("iter"))]
+        if s.get("motivo"):
+            lineas.append("motivo: %s" % s["motivo"])
+        if s.get("visto"):
+            lineas.append("ve el punto: x=%s y=%s  error_x=%s  ángulo=%s°  distancia=%s m" % (
+                s.get("cx"), s.get("cy"), s.get("err_x"), s.get("ang_deg"), s.get("dist_m")))
+            self._marca = (s["cx"], s["cy"])
+        elif "visto" in s:
+            lineas.append("no ve el punto rojo")
+            self._marca = None
+        self.mision_text.value = "\n".join(lineas)
+        self._refresh(self.mision_text)
+        if self._ultimo_frame is not None:      # la imagen llegó antes que el estado: se vuelve a dibujar
+            self.on_frame(*self._ultimo_frame, nuevo=False)
+
+    def on_frame(self, topic, payload, nuevo=True):
+        if nuevo:
+            self._ultimo_frame = (topic, bytes(payload))
         try:
-            width, height, png = camera.frame_to_png(topic, payload)
+            width, height, png = camera.frame_to_png(topic, payload, self._marca)
         except ValueError as e:
             self.camera_info.value = "Imagen descartada: %s" % e
             self._refresh(self.camera_info)
             return
-        self._frames += 1
+        if nuevo:
+            self._frames += 1
         self.camera_image.src = base64.b64encode(png).decode("ascii")
         self.camera_image.width, self.camera_image.height = width * 2, height * 2
         self.camera_info.value = "RGB565 %dx%d | %d bytes | imagen #%d" % (width, height, len(payload), self._frames)
@@ -411,7 +453,9 @@ class CoreoView:
         except (ValueError, UnicodeDecodeError):
             return  # broker público: se ignora lo malformado
         local = topic[len(config.PREFIX):] if topic.startswith(config.PREFIX) else topic
-        if local == motion.TOPIC_STATUS and isinstance(data, dict):
+        if local == mision.TOPIC_STATUS and isinstance(data, dict):
+            self._show_mision(data)
+        elif local == motion.TOPIC_STATUS and isinstance(data, dict):
             self._show_status(data)
         elif local == motion.TOPIC_ONLINE and isinstance(data, dict):
             if data.get("online") is False:
@@ -467,7 +511,7 @@ def main(page: ft.Page):
     client = MqttClient(
         config.BROKER,
         config.PORT,
-        [config.PREFIX + t for t in (motion.TOPIC_STATUS, motion.TOPIC_ONLINE, motion.TOPIC_WATCHDOG,
+        [config.PREFIX + t for t in (motion.TOPIC_STATUS, motion.TOPIC_ONLINE, motion.TOPIC_WATCHDOG, mision.TOPIC_STATUS,
                                      camera.TOPIC_FRAME_FILTER)],
         view.on_message,
         view.on_link,

@@ -96,11 +96,11 @@ ya sabe ejecutar; en la misión autónoma el robot los usa internamente:
 |---|-------|--------|-------|
 | 0 | Calibrar la cámara: fps, jitter y huecos reales | script listo; falta correrlo con el robot | `pc/calibrar_camara.py` |
 | 1 | Detectar el punto rojo (prototipo con OpenCV para calibrar el color) | hecho, con pruebas | `pc/vision.py` |
-| 2 | Medir la geometría (altura e inclinación de la cámara, campo de visión, alcance del brazo) y comprobar que la cámara ve un punto de 1 cm a 10 cm | **pendiente: medir y llenar `pc/ajustes.py`** | `pc/ajustes.py` |
-| 3 | Detección de color en el Pico (MicroPython, sin OpenCV) | pendiente | `micropython/` |
-| 4 | Ciclo autónomo de la sección 4 (mirar, girar, avanzar, parar, barrido) | pendiente | `micropython/` |
-| 5 | Posicionar la punta del lápiz sobre el objetivo con el brazo | pendiente | `MeArm` de `taller_09_arm` |
-| 6 | Flet: ver la imagen y el punto detectado, botón Arrancar/Detener | pendiente | `taller_09_arm/flet_ui` |
+| 2 | Medir la geometría y llenar `MISION` | **pendiente: llenar las medidas** | `taller_09_arm/common/config.py` |
+| 3 | Detección de rojo en el Pico (sin OpenCV) | escrito y probado en el PC; **falta probarlo en el Pico** | `common/vision_rojo.py`, `micropython/deteccion_test.py` |
+| 4 | Ciclo autónomo (mirar, girar, avanzar, parar, barrido) | escrito y probado con un simulador; **falta probarlo en el robot** | `common/mision.py`, `micropython/mision_task.py` |
+| 5 | Bajar el brazo sobre el objetivo | escrito (pose `brazo_abajo`); **falta probarlo en el robot** | `MISION["brazo_abajo"]` |
+| 6 | Flet: imagen con el punto detectado, estado y botones Arrancar/Detener | escrito; **sin probar con el robot** | tarjeta 7 de `taller_09_arm/flet_ui` |
 | – | Medir corriente de los motores (opcional) | script listo, **sin probar** | `micropython/prueba_corriente.py` |
 
 ### Tarea 0: calibrar la cámara
@@ -112,17 +112,57 @@ ya sabe ejecutar; en la misión autónoma el robot los usa internamente:
 4. Si hay huecos o corruptas: subir `CAMERA_PERIOD_MS` o bajar la resolución
    (`CAMERA_SIZE_DIV`: 2 = 160x120, 3 = 80x60). Hoy la cámara manda una imagen cada 2 s.
 
-### Tarea 2: geometría que hay que medir
+### Tarea 2: las medidas (diccionario `MISION`)
 
-Están en cero a propósito en `pc/ajustes.py`:
+Se llenan **una sola vez**, en `taller_09_arm/common/config.py`, dentro de `MISION`. El robot las
+lee de ahí y el PC también. Mientras alguna siga en `None`, **la misión se niega a arrancar** y
+Flet muestra cuál falta: así el robot nunca se mueve con números inventados.
 
-- `CAM_ALTURA_M`: altura de la cámara sobre el piso.
-- `CAM_INCLINACION_DEG`: cuánto mira hacia abajo respecto a la horizontal.
-- `CAM_FOV_VERT_DEG` (y el horizontal, para el giro): campo de visión del OV7670 con su lente.
-- `ALCANCE_BRAZO_M`: hasta dónde llega la punta del marcador con el brazo estirado (~8 cm).
-- `DIST_PARADA_M`: a qué distancia del punto se detiene el carro para bajar el brazo.
+| Clave | Qué es | Cómo se mide |
+|---|---|---|
+| `cam_altura_m` | altura de la cámara sobre el piso | regla |
+| `cam_inclinacion_deg` | cuánto mira hacia abajo respecto a la horizontal | transportador o `atan((altura - h_punto)/dist)` |
+| `fov_v_deg`, `fov_h_deg` | campo de visión vertical y horizontal | `2·atan((alto_visible/2)/distancia)` contra una pared (ver abajo) |
+| `punta_dist_m` | distancia horizontal de la cámara a la punta del lápiz con el brazo abajo | regla, con el brazo en `brazo_abajo` |
 
-Con estos valores, la fila `cy` del punto en la imagen da su distancia al piso.
+Medir el campo de visión: cámara de frente a una pared a una distancia `d` conocida; mire cuántos
+cm de pared caben de arriba a abajo en la imagen (`h`) y de lado a lado (`a`).
+`fov_v = 2·atan(h/2/d)`, `fov_h = 2·atan(a/2/d)`.
+
+Lo demás de `MISION` ya tiene un valor razonable que se afina probando: `w_giro_deg_s` y `v_dm_s`
+(velocidades del carro), `tol_err_x`, `tol_dist_m`, `barrido_deg`, `settle_ms`, y los umbrales del
+rojo `rojo_r_min` y `rojo_dif_min`.
+
+**Pose del brazo:** `brazo_abajo = (0, 0, -90)`. Con la cinemática del MeArm es la punta más baja y
+adelantada (~10 cm del hombro), y cumple `-160 <= alpha2 - alpha1 <= -20`.
+
+## Cómo probar, de a una pieza
+
+Suba al Pico: `main.py`, `config.py`, `mision_task.py`, `camera_task.py`, `deteccion_test.py`,
+`camara_test.py`, `drivers/`, `common/` (con `vision_rojo.py` y `mision.py`) y lo demás de siempre.
+
+1. **Detección (sin motores):** `deteccion_test.py`, F5, `ver()`. Con un punto rojo de 1 cm a 10 cm
+   debe decir `VISTO` con `area >= 2` y cuánto tardó. Si dice `no veo rojo`, imprime el color del
+   píxel más rojo: así se ajustan `rojo_r_min` y `rojo_dif_min`. Con `repetir(10)` se mueve el punto
+   y `cx`, `cy` deben cambiar.
+2. **Geometría:** con el punto a 10 cm, `ver()` da su fila `cy`. Compare con la distancia real; si
+   no cuadra, revise altura, inclinación y `fov_v`.
+3. **Misión completa:** con el robot en el piso, el punto a 10 cm y las medidas llenas, abra Flet y
+   pulse **ARRANCAR misión** (tarjeta 7). Después no se toca nada. Mire la cruz verde y el estado.
+   Si algo sale mal, **DETENER misión**.
+4. **Sin Flet:** también se arranca publicando `{"action": "start"}` en `<PREFIX>mission/cmd`.
+
+Qué esperar en la Shell del Pico (cada vuelta): `Misión: buscando | detección 180 ms | {...}`.
+
+## Qué ya está hecho y qué no
+
+- Probado en el PC (217 pruebas): detección del rojo, geometría, máquina de estados, una simulación
+  completa del carro llegando al punto, y la tarea de misión con un robot simulado.
+- **No probado en hardware:** nada de lo anterior se ha corrido en el Pico ni con la cámara real.
+  Lo más probable que haya que ajustar: los umbrales del rojo (la OV7670 tiñe los colores), el
+  tiempo de la detección en el Pico (si pasa de ~0,5 s, se baja a 80x60) y las velocidades del carro.
+- El giro en el sitio no tiene calibración de ganancia: si gira más o menos de lo debido, se ajusta
+  `w_giro_deg_s` (o `MOTOR_MIN_DUTY` en `micropython/config.py`).
 
 ## 6. Corriente de los motores (opcional)
 

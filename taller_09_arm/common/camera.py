@@ -80,10 +80,24 @@ def rgb_to_png(width, height, rgb):
     )
 
 
-def frame_to_png(topic, payload):
-    """Mensaje MQTT de imagen -> (ancho, alto, PNG). ValueError si el tamaño no cuadra."""
+def draw_cross(rgb, width, height, cx, cy, size=5, color=(0, 255, 0)):
+    """Dibuja una cruz de brazos `size` centrada en (cx, cy) sobre una imagen RGB (bytearray)."""
+    cx, cy = int(round(cx)), int(round(cy))
+    for d in range(-size, size + 1):
+        for x, y in ((cx + d, cy), (cx, cy + d)):
+            if 0 <= x < width and 0 <= y < height:
+                i = (y * width + x) * 3
+                rgb[i:i + 3] = bytes(color)
+
+
+def frame_to_png(topic, payload, marca=None):
+    """Mensaje MQTT de imagen -> (ancho, alto, PNG). ValueError si el tamaño no cuadra.
+    `marca` = (cx, cy) dibuja una cruz verde en el punto que el robot detectó."""
     width, height = parse_frame_topic(topic)
     if len(payload) != frame_size(width, height):
         raise ValueError("la imagen trae %d bytes y el tópico dice %dx%d (%d)"
                          % (len(payload), width, height, frame_size(width, height)))
-    return width, height, rgb_to_png(width, height, rgb565_to_rgb(payload))
+    rgb = rgb565_to_rgb(payload)
+    if marca is not None:
+        draw_cross(rgb, width, height, marca[0], marca[1])
+    return width, height, rgb_to_png(width, height, rgb)

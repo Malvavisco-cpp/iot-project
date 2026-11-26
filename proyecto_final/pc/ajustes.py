@@ -28,9 +28,11 @@ COLORES = {
 COLOR_OBJETIVO = "rojo"
 AREA_MIN_PX = 12                  # a 160x120 un punto lejano ocupa pocos píxeles
 
-# --- Geometría (MEDIR y poner aquí; están en cero a propósito) -------------------------
-CAM_ALTURA_M = 0.0                # altura de la cámara sobre el piso
-CAM_INCLINACION_DEG = 0.0         # cuánto mira hacia abajo respecto a la horizontal
-CAM_FOV_VERT_DEG = 0.0            # campo de visión vertical del OV7670 con su lente
-ALCANCE_BRAZO_M = 0.08            # MeArm estirado (~8 cm): el punto debe quedar a esta distancia
-DIST_PARADA_M = 0.0               # a cuántos m del punto se detiene el carro para bajar el brazo
+# --- Geometría y movimiento: viven en taller_09_arm/common/config.py (dict MISION) -------------
+# El robot los lee de ahí; aquí solo se ven. None = sin medir.
+MISION = _robot.MISION
+CAM_ALTURA_M = MISION["cam_altura_m"]
+CAM_INCLINACION_DEG = MISION["cam_inclinacion_deg"]
+CAM_FOV_VERT_DEG = MISION["fov_v_deg"]
+CAM_FOV_HORIZ_DEG = MISION["fov_h_deg"]
+PUNTA_DIST_M = MISION["punta_dist_m"]

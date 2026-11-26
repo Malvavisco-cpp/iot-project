@@ -174,16 +174,24 @@ def main():
         on_sync=robot.publish_status,
     )
 
-    # Cámara (taller 12): si falla, el robot sigue igual sin ella.
+    # Misión autónoma (proyecto final): Flet solo la arranca (mission/cmd) y la muestra.
+    import mision_task
+
+    mision = mision_task.make(config, scheduler, node, player)
+
+    # Cámara (taller 12): si falla, el robot sigue igual sin ella. Durante la misión espera a que
+    # el carro frene y se asiente antes de capturar, y le entrega cada imagen a la misión.
     import camera_task
 
-    camera_task.make(
+    camera = camera_task.make(
         config,
         scheduler,
         node,
-        should_defer=(lambda: player.active) if config.CAMERA_PAUSE_WHILE_MOVING else None,
+        should_defer=lambda: (config.CAMERA_PAUSE_WHILE_MOVING and player.active) or mision.settling(),
         is_online=lambda: transport.connected,
+        on_frame=mision.on_frame,
     )
+    mision.camera = camera
 
     tap = StatsTap(node)
     WatchdogTask(scheduler, tap, wifi, period_ms=config.WATCHDOG_PERIOD_MS)

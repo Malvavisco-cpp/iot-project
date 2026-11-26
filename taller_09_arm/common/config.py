@@ -55,3 +55,36 @@ STRAIGHT_W_TRIM = 0.6
 # de más (la rueda interior se va en reversa). En 1.0 no se corrige nada: ajuste desde ahí.
 ARC_W_GAIN_LEFT = 1.0
 ARC_W_GAIN_RIGHT = 1.0
+
+# --- Proyecto final: misión autónoma (ver proyecto_final/README.md) --------------------
+# Las medidas en None están SIN MEDIR: la misión se niega a arrancar hasta que se llenen,
+# así el robot nunca se mueve con números inventados.
+MISION = {
+    # Geometría (MEDIR):
+    "cam_altura_m": None,        # altura de la cámara sobre el piso
+    "cam_inclinacion_deg": None, # cuánto mira hacia abajo respecto a la horizontal
+    "fov_v_deg": None,           # campo de visión vertical de la imagen
+    "fov_h_deg": None,           # campo de visión horizontal de la imagen
+    "punta_dist_m": None,        # distancia horizontal de la cámara a la punta del lápiz con el brazo abajo
+    # Movimiento (del carro real):
+    "w_giro_deg_s": 30.0,        # velocidad del giro en el sitio
+    "v_dm_s": 1.0,               # velocidad de avance, en dm/s (1.0 = 0,1 m/s)
+    "avance_max_m": 0.15,        # un avance nunca pasa de esto; después se vuelve a mirar
+    # Cuándo dar algo por bueno:
+    "tol_err_x": 0.08,           # |error horizontal| (-1..1) con el que ya está centrado
+    "tol_dist_m": 0.01,          # si falta menos de esto, ya llegó
+    "ciego_m": 0.03,             # si tras avanzar quedaban menos de esto y ya no ve el punto, llegó
+    # Búsqueda:
+    "barrido_deg": 25.0,         # cuánto gira cada vez que no ve el punto
+    "barrido_max": 14,           # cuántos giros de barrido antes de rendirse (14 x 25 = 350°)
+    "max_iter": 12,              # mirar/corregir como máximo estas veces
+    "settle_ms": 600,            # espera tras frenar antes de usar la imagen (se pasa el temblor)
+    # Brazo hacia abajo: (alpha0, alpha1, alpha2). Con la cinemática del MeArm, alpha1 = 0 y
+    # alpha2 = -90 es la punta más baja y adelantada (~10 cm del hombro), dentro de los límites.
+    "brazo_abajo": (0.0, 0.0, -90.0),
+    "brazo_t_s": 2.0,            # lo que tarda en bajar
+    # Detección del rojo (RGB 0-255): rojo si R >= r_min y R supera a G y B en dif_min.
+    "rojo_r_min": 110,
+    "rojo_dif_min": 60,
+    "area_min": 2,               # píxeles mínimos del punto (1 cm a 160x120 son pocos)
+}

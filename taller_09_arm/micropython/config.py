@@ -94,6 +94,7 @@ CAMERA_I2C_ID = 1
 CAMERA_SIZE_DIV = 2            # 0=640x480 1=320x240 2=160x120 3=80x60 4=40x30
 CAMERA_TEST_PATTERN = 0        # 0 = imagen real; 2 = barras de color (para probar el envío sin escena)
 CAMERA_PERIOD_MS = 2000        # cada cuánto se manda una imagen
+CAMERA_PERIOD_MISION_MS = 700      # mientras corre la misión la cámara captura más seguido
 CAMERA_PAUSE_WHILE_MOVING = True   # no manda imágenes mientras el robot ejecuta un movimiento
 
 # --- Tiempos --------------------------------------------------------------
