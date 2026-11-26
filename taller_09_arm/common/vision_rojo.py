@@ -31,22 +31,24 @@ def detectar_rojo(buf, ancho, alto, r_min=110, dif_min=60, area_min=2, radio=12,
             b = (lo & 31) << 3
             m = g if g > b else b
             if r - m >= dif_min and m * 2 <= r:     # naranja y rosa tienen G o B altos: no son rojo
-                rojos.append((x, y))
-                if len(rojos) >= 3000:
+                rojos.append(y * ancho + x)     # un entero por píxel (una tupla gastaría mucha RAM en el Pico)
+                if len(rojos) >= 1500:
                     break
-        if len(rojos) >= 3000:
+        if len(rojos) >= 1500:
             break
     if len(rojos) * paso * paso < area_min:
         return None
 
-    cx = sum(p[0] for p in rojos) / len(rojos)
-    cy = sum(p[1] for p in rojos) / len(rojos)
+    xs = [i % ancho for i in rojos]
+    ys = [i // ancho for i in rojos]
+    cx = sum(xs) / len(xs)
+    cy = sum(ys) / len(ys)
     r2 = radio * radio
-    cerca = [p for p in rojos if (p[0] - cx) ** 2 + (p[1] - cy) ** 2 <= r2]
+    cerca = [k for k in range(len(xs)) if (xs[k] - cx) ** 2 + (ys[k] - cy) ** 2 <= r2]
     if len(cerca) * paso * paso < area_min:
         return None
-    cx = sum(p[0] for p in cerca) / len(cerca)
-    cy = sum(p[1] for p in cerca) / len(cerca)
+    cx = sum(xs[k] for k in cerca) / len(cerca)
+    cy = sum(ys[k] for k in cerca) / len(cerca)
     return {
         "cx": cx,
         "cy": cy,
