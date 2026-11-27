@@ -177,9 +177,17 @@ class Mision:
     # ---------------------------------------------------------------- pasos
 
     def _giro(self, ang_deg):
-        """Giro en el sitio. ang_deg > 0 = el punto está a la derecha -> el carro gira a la derecha (w < 0)."""
+        """El punto está a la derecha (ang_deg > 0) -> el carro gira a la derecha (w < 0).
+
+        Con giro_pivote, una rueda se queda quieta y la otra avanza (v = |w|·semiancho): el mismo giro,
+        pero la rueda que avanza va con el PWM de un avance normal. Girar en el sitio, con una rueda
+        hacia atrás, no arranca con tan poco PWM."""
         w = self.p["w_giro_deg_s"]
-        return {"v_dm/s": 0, "w_deg/s": -w if ang_deg > 0 else w, "duration_s": max(0.05, abs(ang_deg) / w)}
+        v = 0.0
+        if self.p.get("giro_pivote", False):
+            v = math.radians(w) * self.p["semiancho_m"] * 10.0      # en dm/s
+        return {"v_dm/s": round(v, 4), "w_deg/s": -w if ang_deg > 0 else w,
+                "duration_s": max(0.05, abs(ang_deg) / w)}
 
     def _avance(self, metros):
         """metros > 0 avanza, metros < 0 retrocede."""

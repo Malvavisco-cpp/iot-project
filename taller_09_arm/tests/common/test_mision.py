@@ -247,3 +247,15 @@ def test_sin_reversa_baja_el_brazo_aunque_se_pase():
     det = {"cx": 80.0, "cy": 60.0, "area": 9, "err_x": 0.0, "err_y": 0.0}
     m.decidir(det, W, H)
     assert m.fase == BRAZO
+
+
+def test_giro_pivote_deja_una_rueda_quieta():
+    m = Mision(dict(GEOM, giro_pivote=True, semiancho_m=0.065, w_giro_deg_s=90.0))
+    g = m._giro(20.0)                        # punto a la derecha -> w < 0
+    assert g["w_deg/s"] == -90.0
+    v = g["v_dm/s"] / 10.0
+    w = math.radians(g["w_deg/s"])
+    assert abs((v + w * 0.065)) < 1e-3       # rueda derecha quieta
+    assert abs((v - w * 0.065) - 0.2) < 1e-2  # rueda izquierda a 0,2 m/s
+    assert abs(g["duration_s"] - 20.0 / 90.0) < 1e-6
+    assert Mision(GEOM)._giro(20.0)["v_dm/s"] == 0      # sin el parámetro, gira en el sitio
