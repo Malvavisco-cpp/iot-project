@@ -224,3 +224,22 @@ def test_fallo_por_horizonte_dice_los_grados():
     det = {"cx": 119.6, "cy": 33.2, "area": 9, "err_x": 0.495, "err_y": -0.45}
     assert m.decidir(det, W, H) is None
     assert m.fase == FALLO and "por encima del horizonte" in m.motivo and "cam_inclinacion_deg" in m.motivo
+
+
+def test_si_el_punto_esta_mas_cerca_que_la_punta_retrocede():
+    dist = mision.distancia_al_piso(60, H, 0.10, 40.0, 40.0)
+    m = Mision(dict(GEOM, punta_dist_m=dist + 0.05))     # la punta llega 5 cm más lejos que el punto
+    m.start()
+    det = {"cx": 80.0, "cy": 60.0, "area": 9, "err_x": 0.0, "err_y": 0.0}
+    estados = m.decidir(det, W, H)
+    assert estados[0]["v_dm/s"] < 0 and abs(estados[0]["duration_s"] - 0.5) < 1e-6   # 5 cm a 1 dm/s
+    assert m.fase == BUSCANDO
+
+
+def test_sin_reversa_baja_el_brazo_aunque_se_pase():
+    dist = mision.distancia_al_piso(60, H, 0.10, 40.0, 40.0)
+    m = Mision(dict(GEOM, punta_dist_m=dist + 0.05, reversa=False))
+    m.start()
+    det = {"cx": 80.0, "cy": 60.0, "area": 9, "err_x": 0.0, "err_y": 0.0}
+    m.decidir(det, W, H)
+    assert m.fase == BRAZO

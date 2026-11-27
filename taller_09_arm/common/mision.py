@@ -157,12 +157,12 @@ class Mision:
         if abs(det["err_x"]) > p["tol_err_x"]:
             self.resto_m = None
             return [self._giro(ang)]
-        falta = dist - p["punta_dist_m"]
-        if falta <= p["tol_dist_m"]:
+        falta = dist - p["punta_dist_m"]       # > 0: falta avanzar; < 0: la punta del lápiz ya se pasó
+        if abs(falta) <= p["tol_dist_m"] or (falta < 0 and not p.get("reversa", True)):
             return self._bajar_brazo()
-        paso = min(falta, p["avance_max_m"])
-        self.resto_m = falta - paso
-        return [self._avance(paso)]
+        paso = min(abs(falta), p["avance_max_m"])
+        self.resto_m = abs(falta) - paso
+        return [self._avance(paso if falta > 0 else -paso)]
 
     # ---------------------------------------------------------------- pasos
 
@@ -172,8 +172,9 @@ class Mision:
         return {"v_dm/s": 0, "w_deg/s": -w if ang_deg > 0 else w, "duration_s": max(0.05, abs(ang_deg) / w)}
 
     def _avance(self, metros):
+        """metros > 0 avanza, metros < 0 retrocede."""
         v = self.p["v_dm_s"]
-        return {"v_dm/s": v, "w_deg/s": 0, "duration_s": max(0.05, metros * 10.0 / v)}
+        return {"v_dm/s": v if metros >= 0 else -v, "w_deg/s": 0, "duration_s": max(0.05, abs(metros) * 10.0 / v)}
 
     def _bajar_brazo(self):
         a0, a1, a2 = self.p["brazo_abajo"]

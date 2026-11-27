@@ -70,6 +70,7 @@ MISION = {
     "w_giro_deg_s": 30.0,        # velocidad del giro en el sitio
     "v_dm_s": 1.0,               # velocidad de avance, en dm/s (1.0 = 0,1 m/s)
     "avance_max_m": 0.15,        # un avance nunca pasa de esto; después se vuelve a mirar
+    "reversa": True,             # si el punto está MÁS CERCA que la punta del lápiz, retrocede en vez de bajar el brazo
     # Cuándo dar algo por bueno:
     "tol_err_x": 0.08,           # |error horizontal| (-1..1) con el que ya está centrado
     "tol_dist_m": 0.01,          # si falta menos de esto, ya llegó
