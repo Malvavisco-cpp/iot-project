@@ -115,7 +115,8 @@ def test_centrado_y_lejos_avanza_sin_pasarse():
     det = {"cx": 80.0, "cy": 30.0, "area": 9, "err_x": 0.0, "err_y": 0.0}
     estados = m.decidir(det, W, H)
     dist = mision.distancia_al_piso(30, H, 0.10, 40.0, 40.0)
-    esperado = min(dist - GEOM["punta_dist_m"], GEOM["avance_max_m"])
+    falta = dist - GEOM["punta_dist_m"]
+    esperado = min(falta, GEOM["avance_max_m"], max(0.03, falta * 0.6))
     assert estados[0]["w_deg/s"] == 0 and estados[0]["v_dm/s"] == 1.0
     assert abs(estados[0]["duration_s"] - esperado * 10.0) < 1e-6
 
@@ -259,3 +260,20 @@ def test_giro_pivote_deja_una_rueda_quieta():
     assert abs((v - w * 0.065) - 0.2) < 1e-2  # rueda izquierda a 0,2 m/s
     assert abs(g["duration_s"] - 20.0 / 90.0) < 1e-6
     assert Mision(GEOM)._giro(20.0)["v_dm/s"] == 0      # sin el parámetro, gira en el sitio
+
+
+def test_giro_gain_alarga_el_giro():
+    m = Mision(dict(GEOM, w_giro_deg_s=90.0, giro_gain=1.6))
+    assert abs(m._giro(9.0)["duration_s"] - 9.0 * 1.6 / 90.0) < 1e-6
+
+
+def test_si_lo_pierde_justo_despues_de_avanzar_retrocede():
+    m = Mision(dict(GEOM, ciego_m=0.0))      # sin zona ciega: aísla el caso
+    m.start()
+    det = {"cx": 80.0, "cy": 30.0, "area": 9, "err_x": 0.0, "err_y": 0.0}
+    avance = m.decidir(det, W, H)[0]
+    assert avance["v_dm/s"] > 0
+    vuelta = m.decidir(None, W, H)
+    assert vuelta[0]["v_dm/s"] < 0 and m.barridos == 0           # retrocede, no barre
+    assert abs(vuelta[0]["duration_s"] - avance["duration_s"] * 0.5) < 1e-6
+    assert m.decidir(None, W, H)[0]["v_dm/s"] == 0               # si sigue sin verlo, ahí sí barre

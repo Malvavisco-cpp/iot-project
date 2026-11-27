@@ -68,13 +68,14 @@ MISION = {
     "punta_dist_m": None,        # distancia horizontal de la cámara a la punta del lápiz con el brazo abajo
     # Movimiento (del carro real):
     "w_giro_deg_s": 90.0,        # velocidad del giro en el sitio (a 30 el PWM sale ~53 % y el carro no se mueve)
+    "giro_gain": 1.6,            # el carro gira ~64 % de lo pedido (arranque/frenado): se alarga el giro
     "giro_pivote": True,         # gira con una rueda quieta y la otra avanzando (en el sitio no arranca)
     "semiancho_m": 0.065,        # mitad de la distancia entre ruedas (igual a WHEEL_HALF_TRACK_M)
     "v_dm_s": 2.0,               # velocidad de avance, en dm/s (2.0 = 0,2 m/s; a 1.0 el PWM queda justo en la zona muerta)
     "avance_max_m": 0.15,        # un avance nunca pasa de esto; después se vuelve a mirar
     "reversa": True,             # si el punto está MÁS CERCA que la punta del lápiz, retrocede en vez de bajar el brazo
     # Cuándo dar algo por bueno:
-    "tol_err_x": 0.08,           # |error horizontal| (-1..1) con el que ya está centrado
+    "tol_err_x": 0.12,           # |error horizontal| (-1..1) con el que ya está centrado
     "tol_dist_m": 0.01,          # si falta menos de esto, ya llegó
     "ciego_m": 0.03,             # si tras avanzar quedaban menos de esto y ya no ve el punto, llegó
     # Búsqueda:

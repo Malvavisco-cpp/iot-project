@@ -102,6 +102,8 @@ class Mision:
         self.fase, self.motivo = BUSCANDO, ""
         self.iter = self.barridos = 0
         self.sobre_horizonte = ""
+        self.ult_avance = None
+        self.retro = 0
         self.resto_m = None
         self.ultima = {}
         return None
@@ -133,6 +135,11 @@ class Mision:
             self.ultima = {"visto": False}
             if self.resto_m is not None and self.resto_m <= self.p["ciego_m"]:
                 return self._bajar_brazo()      # lo perdió de vista justo al llegar
+            if self.ult_avance and self.retro < 3:
+                # lo perdió justo después de avanzar: lo más probable es que se pasó y quedó bajo la cámara
+                self.retro += 1
+                m, self.ult_avance = self.ult_avance * 0.5, None
+                return [self._avance(-m)]
             self.barridos += 1
             if self.barridos > self.p["barrido_max"]:
                 return self._fallo("no encuentro el punto rojo")
@@ -156,6 +163,7 @@ class Mision:
                     % (self.sobre_horizonte, p["cam_inclinacion_deg"], p["fov_v_deg"]))
             return [self._giro(-p["barrido_deg"])]
 
+        self.ult_avance = None      # lo ve: la pérdida por pasarse ya no aplica
         self.iter += 1      # los intentos son las veces que lo VE en el piso y corrige; el barrido va aparte
         if self.iter > p["max_iter"]:
             return self._fallo("no logré llegar en %d intentos" % p["max_iter"])
@@ -171,7 +179,10 @@ class Mision:
         if abs(falta) <= p["tol_dist_m"] or (falta < 0 and not p.get("reversa", True)):
             return self._bajar_brazo()
         paso = min(abs(falta), p["avance_max_m"])
+        if abs(falta) > 0.05:           # de lejos la distancia no es fiable: avanza 60 % y vuelve a mirar
+            paso = min(paso, max(0.03, abs(falta) * 0.6))
         self.resto_m = abs(falta) - paso
+        self.ult_avance = paso if falta > 0 else None
         return [self._avance(paso if falta > 0 else -paso)]
 
     # ---------------------------------------------------------------- pasos
@@ -187,7 +198,7 @@ class Mision:
         if self.p.get("giro_pivote", False):
             v = math.radians(w) * self.p["semiancho_m"] * 10.0      # en dm/s
         return {"v_dm/s": round(v, 4), "w_deg/s": -w if ang_deg > 0 else w,
-                "duration_s": max(0.05, abs(ang_deg) / w)}
+                "duration_s": max(0.05, abs(ang_deg) * self.p.get("giro_gain", 1.0) / w)}
 
     def _avance(self, metros):
         """metros > 0 avanza, metros < 0 retrocede."""
