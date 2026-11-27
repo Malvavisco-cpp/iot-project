@@ -162,11 +162,13 @@ def test_tope_de_intentos():
     assert m.fase == FALLO and "intentos" in m.motivo
 
 
-def test_horizonte_imposible_falla_sin_moverse():
+def test_rojo_sobre_el_horizonte_se_ignora_y_sigue_buscando():
     m = Mision(dict(GEOM, cam_inclinacion_deg=0.0))
     m.start()
     det = {"cx": 80.0, "cy": 5.0, "area": 9, "err_x": 0.0, "err_y": -0.9}
-    assert m.decidir(det, W, H) is None and m.fase == FALLO
+    est = m.decidir(det, W, H)
+    assert m.fase == BUSCANDO and est[0]["v_dm/s"] == 0 and m.iter == 0
+    assert m.ultima["ignorado"] == "sobre el horizonte"
 
 
 def test_simulacion_completa_llega_y_baja_el_brazo():
@@ -222,6 +224,8 @@ def test_fallo_por_horizonte_dice_los_grados():
     m = Mision(dict(GEOM, cam_inclinacion_deg=2.0))
     m.start()
     det = {"cx": 119.6, "cy": 33.2, "area": 9, "err_x": 0.495, "err_y": -0.45}
+    for _ in range(GEOM["barrido_max"]):
+        assert m.decidir(det, W, H) is not None
     assert m.decidir(det, W, H) is None
     assert m.fase == FALLO and "por encima del horizonte" in m.motivo and "cam_inclinacion_deg" in m.motivo
 

@@ -101,6 +101,7 @@ class Mision:
             return self.motivo
         self.fase, self.motivo = BUSCANDO, ""
         self.iter = self.barridos = 0
+        self.sobre_horizonte = ""
         self.resto_m = None
         self.ultima = {}
         return None
@@ -137,21 +138,30 @@ class Mision:
                 return self._fallo("no encuentro el punto rojo")
             return [self._giro(-self.p["barrido_deg"])]     # + grados = derecha -> se gira a la izquierda
 
-        self.iter += 1      # los intentos son las veces que lo VE y corrige; el barrido va aparte
-        if self.iter > self.p["max_iter"]:
-            return self._fallo("no logré llegar en %d intentos" % self.p["max_iter"])
         p = self.p
         ang = angulo_horizontal(det["err_x"], p["fov_h_deg"])
         dist = distancia_al_piso(det["cy"], alto, p["cam_altura_m"], p["cam_inclinacion_deg"], p["fov_v_deg"])
+        if dist is None:
+            # Por encima del horizonte no hay piso: es otra cosa roja (fondo, reflejo) o la inclinación
+            # está mal medida. No se rinde: la ignora y sigue buscando; si nunca ve otra cosa, lo dice.
+            b = bajada_deg(det["cy"], alto, p["cam_inclinacion_deg"], p["fov_v_deg"])
+            self.sobre_horizonte = "fila %d queda %.1f grados por encima del horizonte" % (det["cy"], -b)
+            self.ultima = {"visto": False, "ignorado": "sobre el horizonte", "cy": round(det["cy"], 1),
+                           "cx": round(det["cx"], 1)}
+            self.barridos += 1
+            if self.barridos > p["barrido_max"]:
+                return self._fallo(
+                    "solo veo rojo por encima del horizonte (%s; inclinación %.1f, fov_v %.1f): o es algo del "
+                    "fondo, o cam_inclinacion_deg/fov_v_deg están mal (¿hacia abajo y en grados?)"
+                    % (self.sobre_horizonte, p["cam_inclinacion_deg"], p["fov_v_deg"]))
+            return [self._giro(-p["barrido_deg"])]
+
+        self.iter += 1      # los intentos son las veces que lo VE en el piso y corrige; el barrido va aparte
+        if self.iter > p["max_iter"]:
+            return self._fallo("no logré llegar en %d intentos" % p["max_iter"])
         self.ultima = {"visto": True, "cx": round(det["cx"], 1), "cy": round(det["cy"], 1),
                        "err_x": round(det["err_x"], 3), "ang_deg": round(ang, 1),
-                       "dist_m": None if dist is None else round(dist, 3)}
-        if dist is None:
-            b = bajada_deg(det["cy"], alto, p["cam_inclinacion_deg"], p["fov_v_deg"])
-            return self._fallo(
-                "el punto (fila %d) queda %.1f grados por encima del horizonte: con inclinación %.1f y "
-                "fov_v %.1f no puede estar en el piso. Revise cam_inclinacion_deg (¿es hacia abajo y en grados?) "
-                "y fov_v_deg" % (det["cy"], -b, p["cam_inclinacion_deg"], p["fov_v_deg"]))
+                       "dist_m": round(dist, 3)}
         self.barridos = 0
 
         if abs(det["err_x"]) > p["tol_err_x"]:
