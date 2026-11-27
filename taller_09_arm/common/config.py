@@ -67,8 +67,8 @@ MISION = {
     "fov_h_deg": None,           # campo de visión horizontal de la imagen
     "punta_dist_m": None,        # distancia horizontal de la cámara a la punta del lápiz con el brazo abajo
     # Movimiento (del carro real):
-    "w_giro_deg_s": 30.0,        # velocidad del giro en el sitio
-    "v_dm_s": 1.0,               # velocidad de avance, en dm/s (1.0 = 0,1 m/s)
+    "w_giro_deg_s": 90.0,        # velocidad del giro en el sitio (a 30 el PWM sale ~53 % y el carro no se mueve)
+    "v_dm_s": 2.0,               # velocidad de avance, en dm/s (2.0 = 0,2 m/s; a 1.0 el PWM queda justo en la zona muerta)
     "avance_max_m": 0.15,        # un avance nunca pasa de esto; después se vuelve a mirar
     "reversa": True,             # si el punto está MÁS CERCA que la punta del lápiz, retrocede en vez de bajar el brazo
     # Cuándo dar algo por bueno:
