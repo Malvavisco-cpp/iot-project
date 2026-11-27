@@ -294,6 +294,35 @@ def ruedas():
     print("listo. ¿Giró a la izquierda y avanzó hacia adelante? Si no, revise LEFT_INVERTED / RIGHT_INVERTED.")
 
 
+def velocidades():
+    """Prueba giros y avances de la misión a varias velocidades, 1,5 s cada uno. RUEDAS EN EL AIRE.
+    Anote desde qué número empieza a moverse y póngalo en MISION (w_giro_deg_s / v_dm_s)."""
+    import math
+
+    from common.motor import duty_for
+
+    drive, _ = _robot()
+    maxv = config.MAX_WHEEL_SPEED_M_S
+    mind = config.MOTOR_MIN_DUTY
+    try:
+        for w in (30, 60, 90, 150, 220):
+            v_rueda = math.radians(w) * config.WHEEL_HALF_TRACK_M
+            print("GIRO w=%d grados/s -> PWM %d %%" % (w, 100 * duty_for(v_rueda, maxv, mind) / 65535))
+            drive.drive(0.0, math.radians(w))
+            time.sleep_ms(1500)
+            drive.stop()
+            time.sleep_ms(800)
+        for v in (1, 2, 3, 4):
+            print("AVANCE v=%d dm/s -> PWM %d %%" % (v, 100 * duty_for(v / 10.0, maxv, mind) / 65535))
+            drive.drive(v / 10.0, 0.0)
+            time.sleep_ms(1500)
+            drive.stop()
+            time.sleep_ms(800)
+    finally:
+        drive.stop()
+    print("listo: ¿con cuál GIRO y cuál AVANCE empezó a moverse?")
+
+
 def brazo():
     """Baja el brazo a la pose de la misión y lo vuelve a subir."""
     from common.config import MISION
