@@ -12,7 +12,7 @@ Cualquier excepción detiene el carro: un fallo de la misión nunca deja los mot
 import time
 
 from common import mision as mision_lib
-from common.ticks import ticks_diff
+from common.ticks import ticks_add, ticks_diff
 from common.vision_rojo import detectar_rojo
 from task import Task
 
@@ -45,6 +45,10 @@ class MisionTask(Task):
             self._fin_mov = self.clock()
         self._activo_antes = activo
 
+    @property
+    def activa(self):
+        return self.mision.corriendo
+
     def settling(self):
         """True mientras la misión corre y el robot acaba de frenar: la cámara aún no debe capturar."""
         return self.mision.corriendo and ticks_diff(self.clock(), self._fin_mov) < self.params["settle_ms"]
@@ -58,7 +62,7 @@ class MisionTask(Task):
                 self.player.stop()
                 motivo = self.mision.start()
                 print("Misión:", "ARRANCA" if motivo is None else "no arranca: " + motivo)
-                self._fin_mov = self.clock()
+                self._fin_mov = ticks_add(self.clock(), -self.params["settle_ms"])    # aún no se ha movido: sin espera
                 self._camara_rapida(motivo is None)
             elif accion == "stop":
                 self._parar()
@@ -88,8 +92,8 @@ class MisionTask(Task):
 
     def on_frame(self, frame, ancho, alto):
         """Llamada por CameraTask con cada imagen nueva (bytes RGB565)."""
-        if not self.mision.corriendo or self.player.active:
-            return
+        if not self.mision.corriendo or self.player.active or self.settling():
+            return      # en movimiento o recién frenado la imagen sale movida: se muestra, pero no se analiza
         try:
             p = self.params
             t0 = time.ticks_ms()

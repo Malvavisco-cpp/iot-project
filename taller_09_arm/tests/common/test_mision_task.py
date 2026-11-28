@@ -95,7 +95,7 @@ def test_mientras_el_carro_se_mueve_ignora_imagenes(mt):
 
 def test_espera_a_que_pase_el_temblor(mt):
     mt.node_.subs["mission/cmd"]("mission/cmd", {"action": "start"})
-    assert mt.settling()
+    assert not mt.settling()                      # al arrancar aún no se ha movido: sin espera
     mt.reloj.t = 700
     assert not mt.settling()
     mt.player_.active = True
@@ -142,3 +142,18 @@ def test_cruz_sobre_el_punto():
     assert rgb[(5 * 10 + 5) * 3 + 1] == 255 and rgb[(5 * 10 + 7) * 3 + 1] == 255
     assert rgb[(0 * 10 + 0) * 3 + 1] == 0
     camera.draw_cross(rgb, 10, 10, 99, 99)        # fuera de la imagen: no revienta
+
+
+def test_imagen_recien_frenado_no_se_analiza_pero_despues_si(mt):
+    mt.node_.subs["mission/cmd"]("mission/cmd", {"action": "start"})
+    mt.player_.active = True
+    mt.update()
+    mt.player_.active = False
+    mt.reloj.t = 100
+    mt.update()                                   # frenó en t = 100
+    mt.reloj.t = 300                              # aún movida por el frenazo: se ignora
+    mt.on_frame(imagen(130, 50), W, H)
+    assert len(mt.player_.jugado) == 0
+    mt.reloj.t = 900                              # asentada: ahora sí
+    mt.on_frame(imagen(130, 50), W, H)
+    assert len(mt.player_.jugado) == 1

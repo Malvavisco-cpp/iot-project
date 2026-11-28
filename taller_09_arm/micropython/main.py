@@ -187,7 +187,10 @@ def main():
         config,
         scheduler,
         node,
-        should_defer=lambda: (getattr(config, "CAMERA_PAUSE_WHILE_MOVING", True) and player.active) or mision.settling(),
+        # Con la misión corriendo la cámara NO se pausa al moverse: Flet sigue viendo video. La misión solo
+        # detecta cuando el carro está quieto y asentado (mision_task.on_frame lo comprueba).
+        should_defer=lambda: (getattr(config, "CAMERA_PAUSE_WHILE_MOVING", True) and player.active
+                              and not mision.activa),
         is_online=lambda: transport.connected,
         on_frame=mision.on_frame,
     )

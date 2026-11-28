@@ -431,10 +431,15 @@ class CoreoView:
     def on_frame(self, topic, payload, nuevo=True):
         if nuevo:
             self._ultimo_frame = (topic, bytes(payload))
+            self._marca = None      # la cruz es de la imagen que el robot analizó; esta es más nueva
         try:
             width, height, png = camera.frame_to_png(topic, payload, self._marca)
         except ValueError as e:
             self.camera_info.value = "Imagen descartada: %s" % e
+            self._refresh(self.camera_info)
+            return
+        except Exception as e:      # un fallo al dibujar nunca debe congelar el video
+            self.camera_info.value = "No pude dibujar la imagen: %s" % e
             self._refresh(self.camera_info)
             return
         if nuevo:
